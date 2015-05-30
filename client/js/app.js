@@ -320,9 +320,14 @@
           return _this.inRoom = false;
         };
       })(this));
-      return this.socket.on("error", (function(_this) {
+      this.socket.on("error", (function(_this) {
         return function(err) {
           return console.log("Error:", err);
+        };
+      })(this));
+      return this.socket.on("stats", (function(_this) {
+        return function(stats) {
+          return console.log("Stats", stats);
         };
       })(this));
     };
@@ -478,6 +483,10 @@
         results.push(m.render(this.graph));
       }
       return results;
+    };
+
+    Game.prototype.getStats = function() {
+      return this.socket.emit("getStats");
     };
 
     return Game;

@@ -42,6 +42,11 @@ class Gamefield
 
 		@playerUpdateTimer = process.hrtime()
 
+		@timerMoveables = 0
+		@timerCollision = 0
+		@timerOther = 0
+		@timerTicks = 0
+
 		for [0..@options.food.max/2]
 			@createFood()
 		@update 0
@@ -75,6 +80,14 @@ class Gamefield
 							@elements.moveable.splice(i, 1) if e.id == b.id
 					delete @player[socket.id]
 					@player.length--
+
+			socket.on "getStats", =>
+				console.log(@timerMoveables, @timerCollision, @timerOther, @timerTicks)
+				socket.emit "stats", 
+					moveables: @timerMoveables / @timerTicks
+					collision: @timerCollision / @timerTicks
+					other: @timerOther / @timerTicks
+
 
 
 	generatePos: ->
@@ -120,6 +133,10 @@ class Gamefield
 		for elem in @elements.moveable
 			elem.update timediff
 
+		timerMoveables = process.hrtime(@playerUpdateTimer)
+		timerMoveables = timerMoveables[0]*1e3 + timerMoveables[1]*1e-6
+
+
 		destoryLater = []
 		for i,elem1 of @elements.moveable
 			for elem2 in @elements.static
@@ -141,9 +158,11 @@ class Gamefield
 						elem2.addMass elem1.mass
 						destoryLater.push elem1
 						elem2.player.updateMass() if elem2.player
-					break
 
 		@destroyElement e for e in destoryLater
+
+		timerCollision = process.hrtime(@playerUpdateTimer)
+		timerCollision = timerCollision[0]*1e3 + timerCollision[1]*1e-6 - timerMoveables
 
 		for id, ply of @player when id != "length"
 			ply.update timediff
@@ -158,11 +177,22 @@ class Gamefield
 		@room.emit "updateMoveables", (m.get() for m in @elements.moveable)
 
 		diff = process.hrtime(@playerUpdateTimer)
-		setTimeout( =>
-			diff2 = process.hrtime(@playerUpdateTimer)
-			@update(diff2[0] + diff2[1] * 1e-9)
-		, 1000 / 60 - (diff[0]*1e3 + diff[1]*1e-6))
+		sleep = 1000 / 60 - (diff[0]*1e3 + diff[1]*1e-6)
+		if sleep >= 1
+			setTimeout( =>
+				diff2 = process.hrtime(@playerUpdateTimer)
+				@update(diff2[0] + diff2[1] * 1e-9)
+			, sleep)
+		else
+			setImmediate @update.bind(@, diff[0] + diff[1] * 1e-9)
 
+		timerOther = process.hrtime(@playerUpdateTimer)
+		timerOther = timerOther[0]*1e3 + timerOther[1]*1e-6 - timerCollision - timerMoveables
+
+		@timerMoveables += timerMoveables
+		@timerCollision += timerCollision
+		@timerOther += timerOther
+		@timerTicks++
 
 	get: ->
 		{

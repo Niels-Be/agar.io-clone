@@ -4,8 +4,8 @@ class Element
 		@id = -1
 
 	intercept: (other) ->
-		distance = Math.sqrt((@x - other.x) * (@x - other.x) + (@y - other.y) * (@y - other.y))
-		distance <= @size
+		distance = (@x - other.x) * (@x - other.x) + (@y - other.y) * (@y - other.y)
+		distance <= (@size*@size)
 
 	canEat: (other) ->
 		false

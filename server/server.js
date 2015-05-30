@@ -168,8 +168,8 @@ Element = (function() {
 
   Element.prototype.intercept = function(other) {
     var distance;
-    distance = Math.sqrt((this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y));
-    return distance <= this.size;
+    distance = (this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y);
+    return distance <= (this.size * this.size);
   };
 
   Element.prototype.canEat = function(other) {
@@ -326,6 +326,10 @@ Gamefield = (function() {
     this.foodSpawnTimer = 0;
     this.foodCount = 0;
     this.playerUpdateTimer = process.hrtime();
+    this.timerMoveables = 0;
+    this.timerCollision = 0;
+    this.timerOther = 0;
+    this.timerTicks = 0;
     for (j = 0, ref = this.options.food.max / 2; 0 <= ref ? j <= ref : j >= ref; 0 <= ref ? j++ : j--) {
       this.createFood();
     }
@@ -371,7 +375,7 @@ Gamefield = (function() {
           _this.room.emit("playerJoined", ply.get());
           return socket.emit("start", ply.get());
         });
-        return socket.on("disconnect", function() {
+        socket.on("disconnect", function() {
           var b, e, i, k, len, ref1, ref2;
           if (_this.player.hasOwnProperty(socket.id)) {
             console.log("Player " + _this.player[socket.id].name + " disconnected");
@@ -389,6 +393,14 @@ Gamefield = (function() {
             delete _this.player[socket.id];
             return _this.player.length--;
           }
+        });
+        return socket.on("getStats", function() {
+          console.log(_this.timerMoveables, _this.timerCollision, _this.timerOther, _this.timerTicks);
+          return socket.emit("stats", {
+            moveables: _this.timerMoveables / _this.timerTicks,
+            collision: _this.timerCollision / _this.timerTicks,
+            other: _this.timerOther / _this.timerTicks
+          });
         });
       };
     })(this));
@@ -456,13 +468,15 @@ Gamefield = (function() {
   };
 
   Gamefield.prototype.update = function(timediff) {
-    var destoryLater, diff, e, elem, elem1, elem2, f, i, id, j, k, l, len, len1, len2, len3, m, n, ply, ref, ref1, ref2, ref3, ref4;
+    var destoryLater, diff, e, elem, elem1, elem2, f, i, id, j, k, l, len, len1, len2, len3, m, n, ply, ref, ref1, ref2, ref3, ref4, sleep, timerCollision, timerMoveables, timerOther;
     this.playerUpdateTimer = process.hrtime();
     ref = this.elements.moveable;
     for (j = 0, len = ref.length; j < len; j++) {
       elem = ref[j];
       elem.update(timediff);
     }
+    timerMoveables = process.hrtime(this.playerUpdateTimer);
+    timerMoveables = timerMoveables[0] * 1e3 + timerMoveables[1] * 1e-6;
     destoryLater = [];
     ref1 = this.elements.moveable;
     for (i in ref1) {
@@ -498,7 +512,6 @@ Gamefield = (function() {
               elem2.player.updateMass();
             }
           }
-          break;
         }
       }
     }
@@ -506,6 +519,8 @@ Gamefield = (function() {
       e = destoryLater[n];
       this.destroyElement(e);
     }
+    timerCollision = process.hrtime(this.playerUpdateTimer);
+    timerCollision = timerCollision[0] * 1e3 + timerCollision[1] * 1e-6 - timerMoveables;
     ref4 = this.player;
     for (id in ref4) {
       ply = ref4[id];
@@ -532,13 +547,24 @@ Gamefield = (function() {
       return results;
     }).call(this));
     diff = process.hrtime(this.playerUpdateTimer);
-    return setTimeout((function(_this) {
-      return function() {
-        var diff2;
-        diff2 = process.hrtime(_this.playerUpdateTimer);
-        return _this.update(diff2[0] + diff2[1] * 1e-9);
-      };
-    })(this), 1000 / 60 - (diff[0] * 1e3 + diff[1] * 1e-6));
+    sleep = 1000 / 60 - (diff[0] * 1e3 + diff[1] * 1e-6);
+    if (sleep >= 1) {
+      setTimeout((function(_this) {
+        return function() {
+          var diff2;
+          diff2 = process.hrtime(_this.playerUpdateTimer);
+          return _this.update(diff2[0] + diff2[1] * 1e-9);
+        };
+      })(this), sleep);
+    } else {
+      setImmediate(this.update.bind(this, diff[0] + diff[1] * 1e-9));
+    }
+    timerOther = process.hrtime(this.playerUpdateTimer);
+    timerOther = timerOther[0] * 1e3 + timerOther[1] * 1e-6 - timerCollision - timerMoveables;
+    this.timerMoveables += timerMoveables;
+    this.timerCollision += timerCollision;
+    this.timerOther += timerOther;
+    return this.timerTicks++;
   };
 
   Gamefield.prototype.get = function() {

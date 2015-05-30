@@ -138,6 +138,9 @@ class Game
 		@socket.on "error", (err) =>
 			console.log("Error:",err)
 
+		@socket.on "stats", (stats) =>
+			console.log("Stats", stats)
+
 
 	init: ->
 		@canvas = document.getElementById("cvs")
@@ -255,6 +258,9 @@ class Game
 			m.render(@graph) #unless m == @player
 
 		#@player.render(@graph)
+
+	getStats: ->
+		@socket.emit "getStats"
 
 
 `(function() {
