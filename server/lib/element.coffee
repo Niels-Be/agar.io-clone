@@ -89,6 +89,6 @@ class MoveableElement extends Element
 
 	get: ->
 		extend(super(), {
-			speed: @speed
+#			speed: @speed
 			velocity: @velocity
 		})

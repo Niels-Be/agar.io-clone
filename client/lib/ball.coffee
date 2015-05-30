@@ -1,4 +1,4 @@
-class Ball extends MoveableElement
+class Ball
 	
 	constructor: (@options, data) ->
 		extend @, data

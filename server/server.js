@@ -272,7 +272,6 @@ MoveableElement = (function(superClass) {
 
   MoveableElement.prototype.get = function() {
     return extend(MoveableElement.__super__.get.call(this), {
-      speed: this.speed,
       velocity: this.velocity
     });
   };

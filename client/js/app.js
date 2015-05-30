@@ -1,7 +1,5 @@
 (function() {
-  var Ball, Game, Grid, extend,
-    extend1 = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
+  var Ball, Game, Grid, extend;
 
   extend = function(object, properties) {
     var key, val;
@@ -12,9 +10,7 @@
     return object;
   };
 
-  Ball = (function(superClass) {
-    extend1(Ball, superClass);
-
+  Ball = (function() {
     function Ball(options1, data) {
       this.options = options1;
       extend(this, data);
@@ -57,7 +53,7 @@
 
     return Ball;
 
-  })(MoveableElement);
+  })();
 
   Grid = (function() {
     function Grid(game, options1) {
