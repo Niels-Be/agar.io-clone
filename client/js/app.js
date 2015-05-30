@@ -205,6 +205,8 @@
 
     Game.prototype.rooms = {};
 
+    Game.prototype.lastRoom = 0;
+
     function Game(options) {
       this.options = extend(extend({}, Game.defaultOptions), options);
       this.grid = new Grid(this, this.options.grid);
@@ -213,15 +215,15 @@
       this.lobbySocket.on("availableRooms", (function(_this) {
         return function(rooms) {
           var i, ref, room;
-          _this.rooms = extend(_this.rooms, rooms);
+          _this.rooms = extend(rooms, _this.rooms);
           console.log("Rooms:", _this.rooms);
           _this.roomsText.innerHTML = "";
           ref = _this.rooms;
           for (i in ref) {
             room = ref[i];
-            _this.roomsText.innerHTML += "<option value=" + i + ">" + room.name + " (" + room.playercount + ")</option>";
+            _this.roomsText.innerHTML += "<option value=\"" + i + "\" " + (_this.lastRoom === i ? "selected=\"selected\"" : "") + ">" + room.name + " (" + room.playercount + ")</option>";
           }
-          return _this.join(0);
+          return _this.join(_this.lastRoom);
         };
       })(this));
       this.loop();
@@ -365,7 +367,7 @@
     Game.prototype.join = function(index) {
       console.log("Joining Room " + this.rooms[index].name);
       this.gamefield = this.rooms[index].options;
-      if (this.inRoom) {
+      if (this.inRoom && index !== this.lastRoom) {
         this.socket.emit("leave");
         this.socket.disconnect();
         this.inRoom = false;
@@ -378,7 +380,9 @@
       }
       console.log("Connecting ...");
       if (this.rooms[index].socket) {
-        this.rooms[index].socket.connect('/' + this.rooms[index].name);
+        if (!this.rooms[index].socket.connected) {
+          this.rooms[index].socket.connect();
+        }
         this.socket = this.rooms[index].socket;
       } else {
         this.rooms[index].socket = io.connect('/' + this.rooms[index].name);
@@ -386,6 +390,7 @@
       }
       this.socket.emit("join");
       this.inRoom = true;
+      this.lastRoom = index;
       return this.updatePlayer();
     };
 

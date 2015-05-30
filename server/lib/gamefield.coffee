@@ -10,7 +10,7 @@ class Gamefield
 			mass: 1
 			size: 5
 		player:
-			color: '#ea6153'
+			color: ['#EA6153', '#00FFFF', '#7FFF00', '#6495ED', '#9932CC', '#FF00FF', '#FFE4B5', '#000000']
 			size: 15
 			force: 50
 			acceleration: 1000
@@ -60,7 +60,8 @@ class Gamefield
 
 			socket.on "start", (name) =>
 				console.log("Player "+name+" joind the game "+@name)
-				ply = new Player(socket, name, @)
+				color = @options.player.color[Math.round(Math.random()*@options.player.color.length)]
+				ply = new Player(socket, name, color, @)
 				@player[socket.id] = ply
 				@player.length++
 				@room.emit "playerJoined", ply.get()
@@ -89,7 +90,7 @@ class Gamefield
 
 	createBall: (player) ->
 		[x, y] = @generatePos()
-		b = new Ball(@, x, y, @options.player.color, player, @options.player.size, @options.player.speed)
+		b = new Ball(@, x, y, player.color, player, @options.player.size, @options.player.speed)
 		b.id = @elements.id++
 		@elements.moveable.push b
 		b

@@ -28,15 +28,6 @@ Tanks to [@huytd](https://github.com/huytd/agar.io-clone) for inspiration and pa
 
 ---
 
-## Latest Changes
-- Game logic handled by server
-- Client side is for rendering only
-- Display player name
-- Now supporting chat 
-- Type`-ping` in the chatbox to check your ping
-
----
-
 ## Installation
 >You can check out a more detailed setup tutorial on our [wiki](https://github.com/huytd/agar.io-clone/wiki/Setup)
 
@@ -58,7 +49,7 @@ npm install
 After download all the dependencies, you can run the server with the following command to run the server.
 
 ```
-node server.js
+nodejs server/server.js
 ```
 
 The game will then be accessible at `http://localhost:3000`.

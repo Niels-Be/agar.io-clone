@@ -66,6 +66,7 @@ class Game
 
 	name: "NoName"
 	rooms: {}
+	lastRoom: 0
 
 	constructor: (options) ->
 		@options = extend (extend {}, Game.defaultOptions), options
@@ -75,12 +76,12 @@ class Game
 		@lobbySocket.emit "getRooms"
 
 		@lobbySocket.on "availableRooms", (rooms) =>
-			@rooms = extend @rooms, rooms
+			@rooms = extend rooms, @rooms
 			console.log("Rooms:", @rooms)
 			@roomsText.innerHTML = ""
 			for i,room of @rooms
-				@roomsText.innerHTML += "<option value="+i+">"+room.name+" ("+room.playercount+")</option>"
-			@join 0
+				@roomsText.innerHTML += "<option value=\""+i+"\" "+(if @lastRoom == i then "selected=\"selected\"" else "")+">"+room.name+" ("+room.playercount+")</option>"
+			@join @lastRoom
 
 
 		@loop()
@@ -168,7 +169,7 @@ class Game
 	join: (index) ->
 		console.log("Joining Room " + @rooms[index].name)
 		@gamefield = @rooms[index].options
-		if @inRoom
+		if @inRoom && index != @lastRoom
 			@socket.emit "leave"
 			@socket.disconnect()
 			@inRoom = false
@@ -177,13 +178,14 @@ class Game
 
 		console.log("Connecting ...")
 		if @rooms[index].socket
-			@rooms[index].socket.connect('/'+@rooms[index].name)
+			@rooms[index].socket.connect() unless @rooms[index].socket.connected
 			@socket = @rooms[index].socket
 		else
 			@rooms[index].socket = io.connect('/'+@rooms[index].name)
 			@setCallbacks(@rooms[index].socket)
 		@socket.emit "join"
 		@inRoom = true
+		@lastRoom = index
 		@updatePlayer()
 
 	start: ->

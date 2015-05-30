@@ -1,6 +1,6 @@
 class Player
 
-	constructor: (@socket, @name, @room) ->
+	constructor: (@socket, @name, @color, @room) ->
 		@socket.on "splitUp", @splitUp.bind(@)
 		@socket.on "shoot", @shoot.bind(@)
 		@socket.on "updateTarget", @setTarget.bind(@)

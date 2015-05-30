@@ -24,9 +24,10 @@ sign = function(x) {
 };
 
 Player = (function() {
-  function Player(socket1, name1, room) {
+  function Player(socket1, name1, color1, room) {
     this.socket = socket1;
     this.name = name1;
+    this.color = color1;
     this.room = room;
     this.socket.on("splitUp", this.splitUp.bind(this));
     this.socket.on("shoot", this.shoot.bind(this));
@@ -156,11 +157,11 @@ Player = (function() {
 })();
 
 Element = (function() {
-  function Element(gamefield, x1, y1, color, size) {
+  function Element(gamefield, x1, y1, color1, size) {
     this.gamefield = gamefield;
     this.x = x1;
     this.y = y1;
-    this.color = color;
+    this.color = color1;
     this.size = size != null ? size : 1;
     this.id = -1;
   }
@@ -205,11 +206,11 @@ StaticElement = (function(superClass) {
 MoveableElement = (function(superClass) {
   extend1(MoveableElement, superClass);
 
-  function MoveableElement(gamefield, x1, y1, color, size, speed1) {
+  function MoveableElement(gamefield, x1, y1, color1, size, speed1) {
     this.gamefield = gamefield;
     this.x = x1;
     this.y = y1;
-    this.color = color;
+    this.color = color1;
     this.size = size != null ? size : 1;
     this.speed = speed1 != null ? speed1 : 100;
     this.velocity = {
@@ -292,7 +293,7 @@ Gamefield = (function() {
       size: 5
     },
     player: {
-      color: '#ea6153',
+      color: ['#EA6153', '#00FFFF', '#7FFF00', '#6495ED', '#9932CC', '#FF00FF', '#FFE4B5', '#000000'],
       size: 15,
       force: 50,
       acceleration: 1000,
@@ -361,9 +362,10 @@ Gamefield = (function() {
           return socket.disconnect();
         });
         socket.on("start", function(name) {
-          var ply;
+          var color, ply;
           console.log("Player " + name + " joind the game " + _this.name);
-          ply = new Player(socket, name, _this);
+          color = _this.options.player.color[Math.round(Math.random() * _this.options.player.color.length)];
+          ply = new Player(socket, name, color, _this);
           _this.player[socket.id] = ply;
           _this.player.length++;
           _this.room.emit("playerJoined", ply.get());
@@ -409,7 +411,7 @@ Gamefield = (function() {
   Gamefield.prototype.createBall = function(player) {
     var b, ref, x, y;
     ref = this.generatePos(), x = ref[0], y = ref[1];
-    b = new Ball(this, x, y, this.options.player.color, player, this.options.player.size, this.options.player.speed);
+    b = new Ball(this, x, y, player.color, player, this.options.player.size, this.options.player.speed);
     b.id = this.elements.id++;
     this.elements.moveable.push(b);
     return b;
@@ -570,11 +572,11 @@ Food = (function(superClass) {
 Ball = (function(superClass) {
   extend1(Ball, superClass);
 
-  function Ball(gamefield, x1, y1, color, player1, size, speed1) {
+  function Ball(gamefield, x1, y1, color1, player1, size, speed1) {
     this.gamefield = gamefield;
     this.x = x1;
     this.y = y1;
-    this.color = color;
+    this.color = color1;
     this.player = player1;
     this.size = size != null ? size : 1;
     this.speed = speed1 != null ? speed1 : 100;
@@ -610,11 +612,11 @@ Ball = (function(superClass) {
 Shoot = (function(superClass) {
   extend1(Shoot, superClass);
 
-  function Shoot(gamefield, x1, y1, color) {
+  function Shoot(gamefield, x1, y1, color1) {
     this.gamefield = gamefield;
     this.x = x1;
     this.y = y1;
-    this.color = color;
+    this.color = color1;
     Shoot.__super__.constructor.call(this, this.gamefield, this.x, this.y, this.color);
     this.speed = this.gamefield.options.shoot.speed;
     this.setMass(this.gamefield.options.shoot.mass);
