@@ -1,0 +1,34 @@
+{
+  "name": "agar-clone",
+  "version": "1.0.0",
+  "description": "A simple Agar.io clone",
+  "main": "server.js",
+  "scripts": {
+    "post:install": "bower install",
+    "start": "node server/server.js",
+    "test": "jshint ."
+  },
+  "author": "WaeCo",
+  "contributors": [
+    "WaeCo <aaqqws@googlemail.com> (https://github.com/WaeCo)"
+  ],
+  "dependencies": {
+    "express": "^4.12.4",
+    "socket.io": "^1.3.5"
+  },
+  "devDependencies": {
+    "jshint": "^2.7.0",
+    "nodemon": "^1.2.1",
+    "matchdep": "~0.1.2",
+    "grunt": "~0.4.5",
+    "grunt-mocha": "~0.4.12",
+    "grunt-contrib-concat": "~0.5.1",
+    "grunt-contrib-coffee": "~0.13.0",
+    "grunt-contrib-uglify": "~0.9.1",
+    "grunt-contrib-less": "~1.0.1",
+    "grunt-contrib-watch": "~0.5.3",
+    "grunt-shell": "~0.5.0",
+    "bower": "1.3.8",
+    "grunt-contrib-jshint": "~0.11.2"
+  }
+}

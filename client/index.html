@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Agar.IO Clone</title>
+
+  <link rel="stylesheet" href="/css/main.css"/>
+</head>
+<body>
+  <canvas tabindex="1" id="cvs"></canvas>
+  <div id="status">Players: 0</div>
+  <div id="mass">Mass: 0</div>
+  <div class="chatbox">
+    <ul id="chatList" class="chat-list">
+    </ul>
+    <input id="chatInput" type="text" class="chat-input" placeholder="Chat here..."/>
+  </div>
+
+  <div class="box" id="spawnbox">
+    <div class="box-inner">
+      <input class="elem" id="name" placeholder="Name" />
+      <button class="elem" onclick="game.start()">Start</button>
+      <div class="elem">
+        <select id="rooms" onchange="game.join(this.value)"></select>
+      </div>
+    </div> 
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
