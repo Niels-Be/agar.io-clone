@@ -1,23 +1,15 @@
 Agar.io Clone
 =============
 
-[![GitHub Stars](https://img.shields.io/github/stars/huytd/agar.io-clone.svg)](https://github.com/huytd/agar.io-clone/stargazers)
-[![GitHub Issues](https://img.shields.io/github/issues/huytd/agar.io-clone.svg)](https://github.com/huytd/agar.io-clone/issues)
-[![GitHub Wiki](https://img.shields.io/badge/project-wiki-ff69b4.svg)](https://github.com/huytd/agar.io-clone/wiki/Home)
-[![Live Demo](https://img.shields.io/badge/demo-online-green.svg)](#live-demo) "
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/huytd/agar.io-clone?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+A Agar.io clone built with socket.io and HTML5 Canvas on top of NodeJS.
 
-A simple Agar.io clone built with socket.io and HTML5 Canvas on top of NodeJS.
-
-![Image](http://i.imgur.com/igXo4xh.jpg)
+![Image](http://i.imgur.com/Ol8qtXb.jpg)
 
 ## Live Demo
-[![Singapore](https://img.shields.io/badge/singapore-offline-red.svg)](http://codedaily.vn:3000/) "
-[![Heroku EU](https://img.shields.io/badge/heroku eu-offline-red.svg)](https://agar-clone.herokuapp.com/) "
-[![Heroku US](https://img.shields.io/badge/heroku us-offline-red.svg)](https://agar-clone-us.herokuapp.com/) "
-[![Cloud9](https://img.shields.io/badge/cloud9-online-green.svg)](https://agar-io-clone-d3vont3ch.c9.io/)
+[agar.waeco-soft.com](http://agar.waeco-soft.com/)
 
 ---
+Tanks to [@huytd](https://github.com/huytd/agar.io-clone) for inspiration and parts of this readme
 
 ## How to Play
 >You can check out a more elaborated how to play on our [wiki](https://github.com/huytd/agar.io-clone/wiki/How-to-Play)
@@ -71,5 +63,3 @@ node server.js
 
 The game will then be accessible at `http://localhost:3000`.
 
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/huytd/agar.io-clone/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
