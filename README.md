@@ -25,7 +25,7 @@ Tanks to [@huytd](https://github.com/huytd/agar.io-clone) for inspiration and pa
 ---
 
 ## Features
-- Free name choose
+- Free name choose and random colors
 - Splitting and shooting
 - You can choose your room
   (Room creation is hardcoded at the moment)
@@ -39,7 +39,7 @@ Tanks to [@huytd](https://github.com/huytd/agar.io-clone) for inspiration and pa
 ---
 
 ## Installation
->You can check out a more detailed setup tutorial on our [wiki](https://github.com/huytd/agar.io-clone/wiki/Setup)
+>You can check out a more detailed setup tutorial on @huytd`s [wiki](https://github.com/huytd/agar.io-clone/wiki/Setup)
 
 #### Requirements
 To run the game, you'll need: 
