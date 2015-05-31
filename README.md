@@ -36,6 +36,7 @@ Tanks to [@huytd](https://github.com/huytd/agar.io-clone) for inspiration and pa
 - Items like boosts or bombs
 - Obstracles
 - Room creation by user
+
 ---
 
 ## Installation
