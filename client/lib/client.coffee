@@ -121,8 +121,9 @@ class Game
 				#assume all moveables are enemies
 				@elements.moveable[o.id] = new Ball(@options.enemy, o)
 			#a bit hacky but faster then checking every moveable
-			for b in @player.balls when @elements.moveable.hasOwnProperty(b)
-				@elements.moveable[b].options = @options.player
+			if @player.balls
+				for b in @player.balls when @elements.moveable.hasOwnProperty(b)
+					@elements.moveable[b].options = @options.player
 
 		@socket.on "updatePlayer", (@player) =>
 			@massText.innerHTML = "Mass: "+@player.mass

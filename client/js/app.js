@@ -171,7 +171,7 @@
       enemy: {
         border: 3,
         borderColor: "#27ae60",
-        fillColor: "#2ecc71",
+        fillColor: "#c0392b",
         textColor: "#FFFFFF",
         textBorder: "#000000",
         textBorderSize: 3,
@@ -282,14 +282,23 @@
       })(this));
       this.socket.on("updateMoveables", (function(_this) {
         return function(objs) {
-          var j, len, o, results;
+          var b, j, k, len, len1, o, ref, results;
           _this.elements.moveable = {};
-          results = [];
           for (j = 0, len = objs.length; j < len; j++) {
             o = objs[j];
-            results.push(_this.elements.moveable[o.id] = new Ball(_this.options.enemy, o));
+            _this.elements.moveable[o.id] = new Ball(_this.options.enemy, o);
           }
-          return results;
+          if (_this.player.balls) {
+            ref = _this.player.balls;
+            results = [];
+            for (k = 0, len1 = ref.length; k < len1; k++) {
+              b = ref[k];
+              if (_this.elements.moveable.hasOwnProperty(b)) {
+                results.push(_this.elements.moveable[b].options = _this.options.player);
+              }
+            }
+            return results;
+          }
         };
       })(this));
       this.socket.on("updatePlayer", (function(_this) {
@@ -304,13 +313,6 @@
           _this.gameStarted = false;
           spawnbox.hidden = false;
           return _this.lobbySocket.emit("getRooms");
-        };
-      })(this));
-      this.socket.on("connect_failed", (function(_this) {
-        return function() {
-          console.log("Connect Failed");
-          _this.socket.close();
-          return _this.inRoom = false;
         };
       })(this));
       this.socket.on("disconnect", (function(_this) {
@@ -342,7 +344,6 @@
       })(this));
       this.canvas.addEventListener("keypress", (function(_this) {
         return function(evt) {
-          console.log("Key:", evt.keyCode, evt.charCode);
           if (evt.charCode === 32) {
             _this.socket.emit("splitUp", _this.target);
           }

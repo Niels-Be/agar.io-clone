@@ -1,4 +1,4 @@
-var Ball, Element, Food, Gamefield, MoveableElement, Player, Shoot, StaticElement, app, express, extend, http, io, path, rooms, serveraddress, serverport, sign,
+var Ball, Element, Food, Gamefield, MoveableElement, Obstracle, Player, Shoot, StaticElement, app, express, extend, http, io, path, rooms, serveraddress, serverport, sign,
   extend1 = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
 
@@ -267,13 +267,24 @@ MoveableElement = (function(superClass) {
       this.x += deltaX;
     }
     if ((0 <= (ref1 = this.y + deltaY) && ref1 <= this.gamefield.options.height)) {
+      this.y += deltaY;
+    }
+    if (this.x < 0 && deltaX > 0 || this.x > this.gamefield.options.width && deltaX < 0) {
+      this.x += deltaX;
+    }
+    if (this.y < 0 && deltaY > 0 || this.y > this.gamefield.options.height && deltaY < 0) {
       return this.y += deltaY;
     }
   };
 
   MoveableElement.prototype.get = function() {
+    var vel;
+    vel = {
+      x: this.boostVel.x + this.velocity.x,
+      y: this.boostVel.y + this.velocity.y
+    };
     return extend(MoveableElement.__super__.get.call(this), {
-      velocity: this.velocity
+      velocity: vel
     });
   };
 
@@ -623,7 +634,34 @@ Food = (function(superClass) {
     this.size = this.gamefield.options.food.size;
   }
 
+  Food.prototype.get = function() {
+    return extend(Food.__super__.get.call(this), {
+      type: "food"
+    });
+  };
+
   return Food;
+
+})(StaticElement);
+
+Obstracle = (function(superClass) {
+  extend1(Obstracle, superClass);
+
+  function Obstracle(gamefield, x1, y1, color1, size) {
+    this.gamefield = gamefield;
+    this.x = x1;
+    this.y = y1;
+    this.color = color1;
+    this.size = size;
+  }
+
+  Obstracle.prototype.get = function() {
+    return extend(Obstracle.__super__.get.call(this), {
+      type: "Obstracle"
+    });
+  };
+
+  return Obstracle;
 
 })(StaticElement);
 
@@ -659,7 +697,8 @@ Ball = (function(superClass) {
   Ball.prototype.get = function() {
     return extend(Ball.__super__.get.call(this), {
       name: this.player ? this.player.name : void 0,
-      mass: this.mass
+      mass: this.mass,
+      type: "ball"
     });
   };
 
@@ -695,6 +734,12 @@ Shoot = (function(superClass) {
     speed = this.speed;
     Shoot.__super__.setMass.call(this, mass);
     return this.speed = speed;
+  };
+
+  Shoot.prototype.get = function() {
+    return extend(Shoot.__super__.get.call(this), {
+      type: "shoot"
+    });
   };
 
   return Shoot;
