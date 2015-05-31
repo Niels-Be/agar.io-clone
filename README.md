@@ -12,7 +12,7 @@ A Agar.io clone built with socket.io and HTML5 Canvas on top of NodeJS.
 Tanks to [@huytd](https://github.com/huytd/agar.io-clone) for inspiration and parts of this readme
 
 ## How to Play
->You can check out a more elaborated how to play on our [wiki](https://github.com/huytd/agar.io-clone/wiki/How-to-Play)
+>You can check out a more elaborated how to play on @huytd`s [wiki](https://github.com/huytd/agar.io-clone/wiki/How-to-Play)
 
 #### Game Basics
 - Move your mouse on the screen to move yourself
