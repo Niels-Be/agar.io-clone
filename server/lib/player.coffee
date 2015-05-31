@@ -20,6 +20,7 @@ class Player
 			b = @room.createBall(@)
 			b.setMass Math.floor(ball.mass / 2)
 			ball.setMass Math.floor(ball.mass / 2)
+			#TODO check border
 			b.x = ball.x + ball.size*2 * Math.cos(deg)
 			b.y = ball.y + ball.size*2 * Math.sin(deg)
 			b.setTarget target
@@ -34,6 +35,7 @@ class Player
 		for ball in @balls when ball.mass > @room.options.shoot.mass*2
 			b = @room.createShoot(ball)
 			ball.addMass -@room.options.shoot.mass
+			#TODO check border
 			b.x += ball.size*2 * Math.cos(deg)
 			b.y += ball.size*2 * Math.sin(deg)
 			b.setTarget target
@@ -41,7 +43,8 @@ class Player
 
 	setTarget: (target) ->
 		for ball in @balls
-			t =
+			t = #TODO something is still wrong here
+				#     maybe player pos on server and client differ
 				x: target.x - (ball.x - @x)
 				y: target.y - (ball.y - @y)
 			ball.setTarget(t)

@@ -13,10 +13,16 @@ rooms["default"] = new Gamefield("default")
 rooms["small"] = new Gamefield("small", {width: 2000, height: 2000})
 
 io.on "connection", (socket) =>
-	console.log("Got new Connection")
+	console.log("Got new Server connection")
 
 	socket.on "getRooms", =>
 		socket.emit "availableRooms", (rooms[r].get() for r of rooms)
+
+	socket.on "createRoom", (name, options) =>
+		if not rooms.hasOwnProperty(name)
+			rooms[name] = new Gamefield(name, options)
+		else
+			socket.emit "roomCreateFailed", "Name already exists"
 
 	socket.on "error", (err) =>
 		console.log("Error:", err)

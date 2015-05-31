@@ -4,6 +4,7 @@ class Grid
 
 
 	render: (graph) ->
+		#draw grid
 		graph.beginPath()
 		graph.lineWidth = 1
 		graph.strokeStyle = @options.lineColor
@@ -17,6 +18,7 @@ class Grid
 		
 		graph.stroke()
 
+		#draw border lines
 		graph.beginPath()
 		graph.lineWidth = @options.borderSize
 		graph.strokeStyle = @options.borderColor
@@ -29,6 +31,7 @@ class Grid
 
 		graph.stroke()
 
+	# Position relative code not needed since we always draw the entiere gamefield
 	###	px = @game.player.x % @options.size
 		py = @game.player.y % @options.size
 

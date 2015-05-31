@@ -6,6 +6,7 @@ class Ball extends MoveableElement
 
 	setMass: (mass) ->
 		@mass = mass
+		#TODO look for better functions exponential is to hard
 		@size = @gamefield.options.player.size + 150 * Math.log((mass+150)/150)
 		@speed = @gamefield.options.player.speed * Math.exp(-@gamefield.options.player.speedPenalty * mass)
 	addMass: (mass) ->
@@ -18,6 +19,7 @@ class Ball extends MoveableElement
 		extend(super(), {
 			name: @player.name if @player
 			mass: @mass
+			type: "ball"
 		})
 
 
@@ -40,3 +42,7 @@ class Shoot extends Ball
 		super(mass)
 		@speed = speed
 
+	get: ->
+		extend(super(), {
+			type: "shoot"
+		})

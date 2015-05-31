@@ -57,12 +57,12 @@ class MoveableElement extends Element
 			@boostVel.y = if sign(velY) == sign(@boostVel.y) then velY else 0
 
 
-
 		#a = @gamefield.options.player.force / (@mass + 1)
-		a = @gamefield.options.player.acceleration
+		a = @gamefield.options.player.acceleration #constant acceleration independet of mass
 
+		#switch ifs to allow still standing
 		#if @target.x*@target.x + @target.y*@target.y > @size*@size/4
-		if @target.x != 0 || @target.y != 0
+		if @target.x != 0 || @target.y != 0 #prevent devision by 0
 			deg = Math.atan2(@target.y, @target.x)
 			degX = Math.cos(deg)
 			degY = Math.sin(deg)
@@ -82,13 +82,22 @@ class MoveableElement extends Element
 		deltaX = (@boostVel.x + @velocity.x) * t
 		deltaY = (@boostVel.y + @velocity.y) * t
 
+		#do not let them move outside the gamefield
 		if(0 <= @x + deltaX <= @gamefield.options.width)
 			@x += deltaX
 		if(0 <= @y + deltaY <= @gamefield.options.height)
 			@y += deltaY
 
+		#if they got outside somehow, let them move back in
+		if(@x < 0 && deltaX > 0 || @x > @gamefield.options.width && deltaX < 0)
+			@x += deltaX
+		if(@y < 0 && deltaY > 0 || @y > @gamefield.options.height && deltaY < 0)
+			@y += deltaY
+
 	get: ->
+		vel = 
+			x: (@boostVel.x + @velocity.x)
+			y: (@boostVel.y + @velocity.y)
 		extend(super(), {
-#			speed: @speed
-			velocity: @velocity
+			velocity: vel
 		})

@@ -19,13 +19,23 @@ Tanks to [@huytd](https://github.com/huytd/agar.io-clone) for inspiration and pa
 - Eat food and other players in order to grow yourself (food respawns every time a player eats it)
 - Player's **mass** is the number of food eaten
 - Try to get fat and eat other players
+- You can use your mass to split your self and get a speed boost (Key: Space)
+- You can also use your mass to shoot out smaler pices (Key: W)
 
-#### Gameplay Rules
-- Players who haven't eaten yet can't be eaten
-- Everytime a player joins the game, **3** foods will be spawned
-- Everytime a food is eaten by a player, **1** new food will be respawned
-- The more food you eat, the slower you move
+---
 
+## Features
+- Free name choose
+- Splitting and shooting
+- You can choose your room
+  (Room creation is hardcoded at the moment)
+
+
+#### Planed
+- Color choose
+- Items like boosts or bombs
+- Obstracles
+- Room creation by user
 ---
 
 ## Installation

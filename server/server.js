@@ -326,17 +326,20 @@ Gamefield = (function() {
     this.foodSpawnTimer = 0;
     this.foodCount = 0;
     this.playerUpdateTimer = process.hrtime();
-    this.timerMoveables = 0;
-    this.timerCollision = 0;
-    this.timerOther = 0;
-    this.timerTicks = 0;
+    this.timerMoveables = [];
+    this.timerCollision = [];
+    this.timerOther = [];
+    this.updaterStarted = 0;
     for (j = 0, ref = this.options.food.max / 2; 0 <= ref ? j <= ref : j >= ref; 0 <= ref ? j++ : j--) {
       this.createFood();
     }
-    this.update(0);
     this.room.on("connection", (function(_this) {
       return function(socket) {
         console.log("Client connected to room " + _this.name);
+        _this.updaterStarted++;
+        if (_this.updaterStarted === 1) {
+          _this.update(0);
+        }
         socket.on("join", function() {
           var s;
           console.log("Client is ready");
@@ -377,6 +380,7 @@ Gamefield = (function() {
         });
         socket.on("disconnect", function() {
           var b, e, i, k, len, ref1, ref2;
+          _this.updaterStarted--;
           if (_this.player.hasOwnProperty(socket.id)) {
             console.log("Player " + _this.player[socket.id].name + " disconnected");
             ref1 = _this.player[socket.id].balls;
@@ -395,11 +399,28 @@ Gamefield = (function() {
           }
         });
         return socket.on("getStats", function() {
-          console.log(_this.timerMoveables, _this.timerCollision, _this.timerOther, _this.timerTicks);
+          var c, k, l, len, len1, len2, m, n, o, ref1, ref2, ref3, tm;
+          m = c = o = 0;
+          ref1 = _this.timerMoveables;
+          for (k = 0, len = ref1.length; k < len; k++) {
+            tm = ref1[k];
+            m += tm;
+          }
+          ref2 = _this.timerCollision;
+          for (l = 0, len1 = ref2.length; l < len1; l++) {
+            tm = ref2[l];
+            c += tm;
+          }
+          ref3 = _this.timerOther;
+          for (n = 0, len2 = ref3.length; n < len2; n++) {
+            tm = ref3[n];
+            o += tm;
+          }
+          console.log(m, c, o);
           return socket.emit("stats", {
-            moveables: _this.timerMoveables / _this.timerTicks,
-            collision: _this.timerCollision / _this.timerTicks,
-            other: _this.timerOther / _this.timerTicks
+            moveables: m / _this.timerMoveables.length,
+            collision: c / _this.timerCollision.length,
+            other: o / _this.timerOther.length
           });
         });
       };
@@ -470,6 +491,9 @@ Gamefield = (function() {
   Gamefield.prototype.update = function(timediff) {
     var destoryLater, diff, e, elem, elem1, elem2, f, i, id, j, k, l, len, len1, len2, len3, m, n, ply, ref, ref1, ref2, ref3, ref4, sleep, timerCollision, timerMoveables, timerOther;
     this.playerUpdateTimer = process.hrtime();
+    if (this.updaterStarted === 0) {
+      return;
+    }
     ref = this.elements.moveable;
     for (j = 0, len = ref.length; j < len; j++) {
       elem = ref[j];
@@ -537,11 +561,11 @@ Gamefield = (function() {
       this.foodSpawnTimer = 0;
     }
     this.room.emit("updateMoveables", (function() {
-      var len4, o, ref5, results;
+      var len4, p, ref5, results;
       ref5 = this.elements.moveable;
       results = [];
-      for (o = 0, len4 = ref5.length; o < len4; o++) {
-        m = ref5[o];
+      for (p = 0, len4 = ref5.length; p < len4; p++) {
+        m = ref5[p];
         results.push(m.get());
       }
       return results;
@@ -561,10 +585,18 @@ Gamefield = (function() {
     }
     timerOther = process.hrtime(this.playerUpdateTimer);
     timerOther = timerOther[0] * 1e3 + timerOther[1] * 1e-6 - timerCollision - timerMoveables;
-    this.timerMoveables += timerMoveables;
-    this.timerCollision += timerCollision;
-    this.timerOther += timerOther;
-    return this.timerTicks++;
+    this.timerMoveables.unshift(timerMoveables);
+    if (!(this.timerMoveables.length > 1000)) {
+      this.timerMoveables.pop;
+    }
+    this.timerCollision.unshift(timerCollision);
+    if (!(this.timerCollision.length > 1000)) {
+      this.timerCollision.pop;
+    }
+    this.timerOther.unshift(timerOther);
+    if (!(this.timerOther.length > 1000)) {
+      return this.timerOther.pop;
+    }
   };
 
   Gamefield.prototype.get = function() {
@@ -692,7 +724,7 @@ rooms["small"] = new Gamefield("small", {
 
 io.on("connection", (function(_this) {
   return function(socket) {
-    console.log("Got new Connection");
+    console.log("Got new Server connection");
     socket.on("getRooms", function() {
       var r;
       return socket.emit("availableRooms", (function() {
@@ -703,6 +735,13 @@ io.on("connection", (function(_this) {
         }
         return results;
       })());
+    });
+    socket.on("createRoom", function(name, options) {
+      if (!rooms.hasOwnProperty(name)) {
+        return rooms[name] = new Gamefield(name, options);
+      } else {
+        return socket.emit("roomCreateFailed", "Name already exists");
+      }
     });
     return socket.on("error", function(err) {
       return console.log("Error:", err);
