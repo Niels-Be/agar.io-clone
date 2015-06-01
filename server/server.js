@@ -111,16 +111,22 @@ Player = (function() {
   };
 
   Player.prototype.update = function(timediff) {
-    var ball, j, len, ref, results;
-    this.x = this.y = 0;
+    var b, j, k, len, len1, ref, ref1;
+    this.x = this.y = this.size = 0;
     ref = this.balls;
-    results = [];
     for (j = 0, len = ref.length; j < len; j++) {
-      ball = ref[j];
-      this.x += ball.x / this.balls.length;
-      results.push(this.y += ball.y / this.balls.length);
+      b = ref[j];
+      this.size += b.size;
     }
-    return results;
+    ref1 = this.balls;
+    for (k = 0, len1 = ref1.length; k < len1; k++) {
+      b = ref1[k];
+      this.x += b.x * b.size;
+      this.y += b.y * b.size;
+    }
+    this.x /= this.size;
+    this.y /= this.size;
+    return this.size /= this.balls.length;
   };
 
   Player.prototype.updateMass = function() {

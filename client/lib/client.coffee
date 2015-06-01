@@ -249,12 +249,16 @@ class Game
 	updatePlayer: ->
 		if @gameStarted
 			#center the camera in the middle of all balls
-			#maybe use weighted average by size
 			@player.x = @player.y = @player.size = 0
 			for b in @player.balls when @elements.moveable.hasOwnProperty(b)
-				@player.x += @elements.moveable[b].x / @player.balls.length
-				@player.y += @elements.moveable[b].y / @player.balls.length
-				@player.size += @elements.moveable[b].size / @player.balls.length
+				@player.size += @elements.moveable[b].size
+			for b in @player.balls when @elements.moveable.hasOwnProperty(b)
+				@player.x += @elements.moveable[b].x * @elements.moveable[b].size
+				@player.y += @elements.moveable[b].y * @elements.moveable[b].size
+			@player.x /= @player.size 
+			@player.y /= @player.size 
+			@player.size /= @player.balls.length
+
 		else #show the entiere map
 			@player.x = @gamefield.width / 2
 			@player.y = @gamefield.height / 2

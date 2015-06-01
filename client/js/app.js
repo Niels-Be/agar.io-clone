@@ -451,21 +451,28 @@
     };
 
     Game.prototype.updatePlayer = function() {
-      var b, j, len, ref, results;
+      var b, j, k, len, len1, ref, ref1;
       if (this.gameStarted) {
         this.player.x = this.player.y = this.player.size = 0;
         ref = this.player.balls;
-        results = [];
         for (j = 0, len = ref.length; j < len; j++) {
           b = ref[j];
+          if (this.elements.moveable.hasOwnProperty(b)) {
+            this.player.size += this.elements.moveable[b].size;
+          }
+        }
+        ref1 = this.player.balls;
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          b = ref1[k];
           if (!(this.elements.moveable.hasOwnProperty(b))) {
             continue;
           }
-          this.player.x += this.elements.moveable[b].x / this.player.balls.length;
-          this.player.y += this.elements.moveable[b].y / this.player.balls.length;
-          results.push(this.player.size += this.elements.moveable[b].size / this.player.balls.length);
+          this.player.x += this.elements.moveable[b].x * this.elements.moveable[b].size;
+          this.player.y += this.elements.moveable[b].y * this.elements.moveable[b].size;
         }
-        return results;
+        this.player.x /= this.player.size;
+        this.player.y /= this.player.size;
+        return this.player.size /= this.player.balls.length;
       } else {
         this.player.x = this.gamefield.width / 2;
         this.player.y = this.gamefield.height / 2;

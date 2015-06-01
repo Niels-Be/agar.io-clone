@@ -44,10 +44,15 @@ class Player
 		@updateMass()
 
 	update: (timediff) ->
-		@x = @y = 0
-		for ball in @balls
-			@x += ball.x / @balls.length
-			@y += ball.y / @balls.length
+		@x = @y = @size = 0
+		for b in @balls
+			@size += b.size
+		for b in @balls
+			@x += b.x * b.size
+			@y += b.y * b.size
+		@x /= @size 
+		@y /= @size
+		@size /= @balls.length
 
 	updateMass: ->
 		@mass = 0
