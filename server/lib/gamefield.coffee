@@ -24,7 +24,7 @@ class Gamefield
 			speed: 750
 			acceleration: 400
 		obstracle:
-			size: 50
+			size: 100
 			max: 5
 			spawn: 0.2 #per Sec
 			color: '#00FF00'

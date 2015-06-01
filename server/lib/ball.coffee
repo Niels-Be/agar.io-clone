@@ -24,9 +24,12 @@ class Ball extends MoveableElement
 		b = @gamefield.createBall(@player)
 		b.setMass Math.floor(@mass / 2)
 		@setMass Math.floor(@mass / 2)
-		#TODO check border
 		b.x = @x + @size*1.6 * Math.cos(deg)
+		b.x = 0 if b.x < 0
+		b.x = @gamefield.options.width if b.x > @gamefield.options.width
 		b.y = @y + @size*1.6 * Math.sin(deg)
+		b.y = 0 if b.y < 0
+		b.y = @gamefield.options.height if b.y > @gamefield.options.height
 		b.setTarget target
 		b.setBoost vel, @gamefield.options.shoot.acceleration
 		b

@@ -120,7 +120,7 @@ Player = (function() {
       this.mass += ball.mass;
     }
     if (this.mass > this.room.options.player.maxMass && this.room.options.player.maxMass !== 0) {
-      splitUp(this.target);
+      this.splitUp(this.target);
     }
     return this.socket.emit("updatePlayer", this.get());
   };
@@ -311,7 +311,7 @@ Gamefield = (function() {
       acceleration: 400
     },
     obstracle: {
-      size: 50,
+      size: 100,
       max: 5,
       spawn: 0.2,
       color: '#00FF00'
@@ -738,7 +738,19 @@ Ball = (function(superClass) {
     b.setMass(Math.floor(this.mass / 2));
     this.setMass(Math.floor(this.mass / 2));
     b.x = this.x + this.size * 1.6 * Math.cos(deg);
+    if (b.x < 0) {
+      b.x = 0;
+    }
+    if (b.x > this.gamefield.options.width) {
+      b.x = this.gamefield.options.width;
+    }
     b.y = this.y + this.size * 1.6 * Math.sin(deg);
+    if (b.y < 0) {
+      b.y = 0;
+    }
+    if (b.y > this.gamefield.options.height) {
+      b.y = this.gamefield.options.height;
+    }
     b.setTarget(target);
     b.setBoost(vel, this.gamefield.options.shoot.acceleration);
     return b;

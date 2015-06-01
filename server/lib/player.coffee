@@ -54,7 +54,7 @@ class Player
 		for ball in @balls
 			@mass += ball.mass
 		if @mass > @room.options.player.maxMass && @room.options.player.maxMass != 0
-			splitUp @target
+			@splitUp @target
 		@socket.emit "updatePlayer", @get()
 
 	get: ->
