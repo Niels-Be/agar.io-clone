@@ -21,9 +21,12 @@ class Player
 		for ball in @balls when ball.mass > @room.options.shoot.mass*2
 			b = @room.createShoot(ball)
 			ball.addMass -@room.options.shoot.mass
-			#TODO check border
-			b.x += ball.size*2 * Math.cos(deg)
-			b.y += ball.size*2 * Math.sin(deg)
+			b.x += ball.size*1.6 * Math.cos(deg)
+			b.x = 0 if b.x < 0
+			b.x = @room.options.width if b.x > @room.options.width
+			b.y += ball.size*1.6 * Math.sin(deg)
+			b.y = 0 if b.y < 0
+			b.y = @room.options.width if b.y > @room.options.width
 			b.setTarget target
 		@updateMass()
 
