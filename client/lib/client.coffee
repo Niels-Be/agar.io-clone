@@ -285,6 +285,7 @@ class Game
 	#debug method to get performance information from the server
 	getStats: ->
 		@socket.emit "getStats"
+		return
 
 
 #setup requestAnimationFrame to work in every environment

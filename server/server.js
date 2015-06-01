@@ -119,9 +119,6 @@ Player = (function() {
       ball = ref[j];
       this.mass += ball.mass;
     }
-    if (this.mass > this.room.options.player.maxMass && this.room.options.player.maxMass !== 0) {
-      this.splitUp(this.target);
-    }
     return this.socket.emit("updatePlayer", this.get());
   };
 
@@ -512,7 +509,7 @@ Gamefield = (function() {
   };
 
   Gamefield.prototype.update = function(timediff) {
-    var destoryLater, diff, e, elem, elem1, elem2, f, i, id, j, k, l, len, len1, len2, len3, m, n, o, ply, ref, ref1, ref2, ref3, ref4, sleep, timerCollision, timerMoveables, timerOther;
+    var b, destoryLater, diff, e, elem, elem1, elem2, f, i, id, j, k, l, len, len1, len2, len3, m, n, o, ply, ref, ref1, ref2, ref3, ref4, sleep, splitThem, timerCollision, timerMoveables, timerOther;
     this.playerUpdateTimer = process.hrtime();
     if (this.updaterStarted === 0) {
       return;
@@ -540,8 +537,22 @@ Gamefield = (function() {
             }
             break;
           } else if (elem2.canEat(elem1)) {
-            while (elem1.mass > this.options.player.minSpitMass) {
-              elem1.splitUp(elem1.target);
+            splitThem = [];
+            if (elem1.mass > this.options.player.minSpitMass) {
+              splitThem.push(elem1);
+            }
+            while (splitThem.length > 0) {
+              e = splitThem.pop();
+              b = e.splitUp(e.target);
+              if (e.mass > this.options.player.minSpitMass) {
+                splitThem.push(e);
+              }
+              if (b.mass > this.options.player.minSpitMass) {
+                splitThem.push(b);
+              }
+              if (elem1.player) {
+                elem1.player.balls.push(b);
+              }
             }
             this.destroyElement(elem2);
             if (elem1.player) {
@@ -826,7 +837,10 @@ rooms["default"] = new Gamefield("default");
 
 rooms["small"] = new Gamefield("small", {
   width: 2000,
-  height: 2000
+  height: 2000,
+  obstracle: {
+    max: 2
+  }
 });
 
 io.on("connection", (function(_this) {

@@ -10,7 +10,12 @@ app.use(express.static('client'));
 rooms = { }
 
 rooms["default"] = new Gamefield("default")
-rooms["small"] = new Gamefield("small", {width: 2000, height: 2000})
+rooms["small"] = new Gamefield("small", {
+		width: 2000
+		height: 2000
+		obstracle:
+			max: 2
+	})
 
 io.on "connection", (socket) =>
 	console.log("Got new Server connection")

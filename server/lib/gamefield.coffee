@@ -183,8 +183,14 @@ class Gamefield
 						elem1.player.updateMass() if elem1.player
 						break
 					else if elem2.canEat elem1 #obstracle
-						while elem1.mass > @options.player.minSpitMass
-							elem1.splitUp elem1.target
+						splitThem = []
+						splitThem.push elem1 if elem1.mass > @options.player.minSpitMass
+						while splitThem.length > 0
+							e = splitThem.pop()
+							b = e.splitUp e.target
+							splitThem.push e if e.mass > @options.player.minSpitMass
+							splitThem.push b if b.mass > @options.player.minSpitMass
+							elem1.player.balls.push b if elem1.player
 						@destroyElement elem2
 						elem1.player.updateMass() if elem1.player
 						break
