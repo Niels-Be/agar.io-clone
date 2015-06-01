@@ -184,6 +184,8 @@ class Gamefield
 						elem1.player.updateMass() if elem1.player
 						break
 					else if elem2.canEat elem1 #obstracle
+						#loose half of mass and split ball to minimal size
+						elem1.addMass -Math.floor(elem1.mass / 2)
 						splitThem = []
 						splitThem.push elem1 if elem1.mass > @options.player.minSpitMass
 						while splitThem.length > 0
