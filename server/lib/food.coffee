@@ -22,5 +22,5 @@ class Obstracle extends StaticElement
 
 	get: ->
 		extend(super(), {
-			type: "Obstracle"
+			type: "obstracle"
 		})

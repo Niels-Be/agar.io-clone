@@ -12,28 +12,25 @@ class Player
 
 	splitUp: (target) ->
 		for ball in @balls when ball.mass >= @room.options.player.minSpitMass
-			@balls.push ball.splitUp target
+			t = #relativ direction to camera and player
+				x: @target.x - (ball.x - @x)
+				y: @target.y - (ball.y - @y)
+			@balls.push ball.splitUp t
 		#console.log("Player "+@name+" split")
 		@updateMass()
 
 	shoot: (target) ->
-		deg = Math.atan2(target.y, target.x)
 		for ball in @balls when ball.mass > @room.options.shoot.mass*2
-			b = @room.createShoot(ball)
-			ball.addMass -@room.options.shoot.mass
-			b.x += ball.size*1.6 * Math.cos(deg)
-			b.x = 0 if b.x < 0
-			b.x = @room.options.width if b.x > @room.options.width
-			b.y += ball.size*1.6 * Math.sin(deg)
-			b.y = 0 if b.y < 0
-			b.y = @room.options.width if b.y > @room.options.width
-			b.setTarget target
+			t = #relativ direction to camera and player
+				x: @target.x - (ball.x - @x)
+				y: @target.y - (ball.y - @y)
+			b = @room.createShoot(ball, t)
+
 		@updateMass()
 
 	setTarget: (@target) ->
 		for ball in @balls
-			t = #TODO something is still wrong here
-				#     maybe player pos on server and client differ
+			t = #relativ direction to camera and player
 				x: @target.x - (ball.x - @x)
 				y: @target.y - (ball.y - @y)
 			ball.setTarget(t)

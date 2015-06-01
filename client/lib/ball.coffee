@@ -2,13 +2,11 @@ class Ball
 	
 	constructor: (@options, data) ->
 		extend @, data
-		@updates = 0
 
 	updateData: (data) ->
 		extend @, data
 
 	update: (t) ->
-		@updates++
 		if @velocity
 			@x += @velocity.x * t
 			@y += @velocity.y * t

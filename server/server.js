@@ -7,13 +7,16 @@ extend = exports.extend = (object, properties) ->
  */
 var Ball, Element, Food, Gamefield, MoveableElement, Obstracle, Player, Shoot, StaticElement, app, express, extend, http, io, path, rooms, serveraddress, serverport, sign,
   extend1 = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
+  hasProp = {}.hasOwnProperty,
+  slice = [].slice;
 
 extend = exports.extend = function(destination, source) {
   var key, val;
   for (key in source) {
     val = source[key];
-    if (typeof val === "object" && val !== null) {
+    if (Array.isArray(val)) {
+      destination[key] = val.slice(0);
+    } else if (typeof val === "object" && val !== null) {
       destination[key] = destination[key] || {};
       arguments.callee(destination[key], val);
     } else {
@@ -49,31 +52,35 @@ Player = (function() {
   }
 
   Player.prototype.splitUp = function(target) {
-    var ball, j, len, ref;
+    var ball, j, len, ref, t;
     ref = this.balls;
     for (j = 0, len = ref.length; j < len; j++) {
       ball = ref[j];
-      if (ball.mass >= this.room.options.player.minSpitMass) {
-        this.balls.push(ball.splitUp(target));
+      if (!(ball.mass >= this.room.options.player.minSpitMass)) {
+        continue;
       }
+      t = {
+        x: this.target.x - (ball.x - this.x),
+        y: this.target.y - (ball.y - this.y)
+      };
+      this.balls.push(ball.splitUp(t));
     }
     return this.updateMass();
   };
 
   Player.prototype.shoot = function(target) {
-    var b, ball, deg, j, len, ref;
-    deg = Math.atan2(target.y, target.x);
+    var b, ball, j, len, ref, t;
     ref = this.balls;
     for (j = 0, len = ref.length; j < len; j++) {
       ball = ref[j];
       if (!(ball.mass > this.room.options.shoot.mass * 2)) {
         continue;
       }
-      b = this.room.createShoot(ball);
-      ball.addMass(-this.room.options.shoot.mass);
-      b.x += ball.size * 2 * Math.cos(deg);
-      b.y += ball.size * 2 * Math.sin(deg);
-      b.setTarget(target);
+      t = {
+        x: this.target.x - (ball.x - this.x),
+        y: this.target.y - (ball.y - this.y)
+      };
+      b = this.room.createShoot(ball, t);
     }
     return this.updateMass();
   };
@@ -170,6 +177,7 @@ Element = (function() {
     this.color = color1;
     this.size = size != null ? size : 1;
     this.id = -1;
+    this.sizechanged = false;
   }
 
   Element.prototype.intercept = function(other) {
@@ -190,6 +198,19 @@ Element = (function() {
       color: this.color,
       size: this.size
     };
+  };
+
+  Element.prototype.getPos = function() {
+    var res;
+    res = {
+      id: this.id,
+      x: this.x,
+      y: this.y
+    };
+    if (this.sizechanged) {
+      res.size = this.size;
+    }
+    return res;
   };
 
   return Element;
@@ -219,6 +240,7 @@ MoveableElement = (function(superClass) {
     this.color = color1;
     this.size = size != null ? size : 1;
     this.speed = speed1 != null ? speed1 : 100;
+    MoveableElement.__super__.constructor.call(this, this.gamefield, this.x, this.y, this.color, this.size);
     this.velocity = {
       x: 0,
       y: 0
@@ -294,6 +316,17 @@ MoveableElement = (function(superClass) {
     });
   };
 
+  MoveableElement.prototype.getPos = function() {
+    var vel;
+    vel = {
+      x: this.boostVel.x + this.velocity.x,
+      y: this.boostVel.y + this.velocity.y
+    };
+    return extend(MoveableElement.__super__.getPos.call(this), {
+      velocity: vel
+    });
+  };
+
   return MoveableElement;
 
 })(Element);
@@ -347,6 +380,7 @@ Gamefield = (function() {
       moveable: [],
       id: 1
     };
+    this.craetedElements = [];
     this.foodSpawnTimer = 0;
     this.foodCount = 0;
     this.obstracleSpawnTimer = 0;
@@ -355,6 +389,7 @@ Gamefield = (function() {
     this.timerMoveables = [];
     this.timerCollision = [];
     this.timerOther = [];
+    this.sendBufferSize = [];
     this.updaterStarted = 0;
     for (j = 0, ref = this.options.food.max / 2; 0 <= ref ? j <= ref : j >= ref; 0 <= ref ? j++ : j--) {
       this.createFood();
@@ -369,26 +404,25 @@ Gamefield = (function() {
         socket.on("join", function() {
           var s;
           console.log("Client is ready");
-          socket.emit("updateMoveables", (function() {
-            var k, len, ref1, results;
-            ref1 = this.elements.moveable;
-            results = [];
-            for (k = 0, len = ref1.length; k < len; k++) {
-              s = ref1[k];
-              results.push(s.get());
-            }
-            return results;
-          }).call(_this));
-          return socket.emit("updateStatics", (function() {
-            var k, len, ref1, results;
-            ref1 = this.elements["static"];
-            results = [];
-            for (k = 0, len = ref1.length; k < len; k++) {
-              s = ref1[k];
-              results.push(s.get());
-            }
-            return results;
-          }).call(_this));
+          return socket.emit("setElements", slice.call((function() {
+              var k, len, ref1, results;
+              ref1 = this.elements.moveable;
+              results = [];
+              for (k = 0, len = ref1.length; k < len; k++) {
+                s = ref1[k];
+                results.push(s.get());
+              }
+              return results;
+            }).call(_this)).concat(slice.call((function() {
+              var k, len, ref1, results;
+              ref1 = this.elements["static"];
+              results = [];
+              for (k = 0, len = ref1.length; k < len; k++) {
+                s = ref1[k];
+                results.push(s.get());
+              }
+              return results;
+            }).call(_this))));
         });
         socket.on("leave", function() {
           console.log("Client left room " + _this.name);
@@ -396,8 +430,8 @@ Gamefield = (function() {
         });
         socket.on("start", function(name) {
           var color, ply;
-          console.log("Player " + name + " joind the game " + _this.name);
           color = _this.options.player.color[Math.round(Math.random() * _this.options.player.color.length)];
+          console.log("Player " + name + "(" + color + ") joind the game " + _this.name);
           ply = new Player(socket, name, color, _this);
           if (!_this.player.hasOwnProperty(socket.id)) {
             _this.player.length++;
@@ -427,8 +461,8 @@ Gamefield = (function() {
           }
         });
         return socket.on("getStats", function() {
-          var c, k, l, len, len1, len2, m, n, o, ref1, ref2, ref3, tm;
-          m = c = o = 0;
+          var b, c, k, l, len, len1, len2, len3, m, n, o, p, ref1, ref2, ref3, ref4, tm;
+          m = c = o = b = 0;
           ref1 = _this.timerMoveables;
           for (k = 0, len = ref1.length; k < len; k++) {
             tm = ref1[k];
@@ -444,11 +478,16 @@ Gamefield = (function() {
             tm = ref3[n];
             o += tm;
           }
-          console.log(m, c, o);
+          ref4 = _this.sendBufferSize;
+          for (p = 0, len3 = ref4.length; p < len3; p++) {
+            tm = ref4[p];
+            b += tm;
+          }
           return socket.emit("stats", {
             moveables: m / _this.timerMoveables.length,
             collision: c / _this.timerCollision.length,
-            other: o / _this.timerOther.length
+            other: o / _this.timerOther.length,
+            sendBuffer: b / _this.sendBufferSize.length
           });
         });
       };
@@ -466,6 +505,7 @@ Gamefield = (function() {
     f = new Food(this, x, y);
     f.id = this.elements.id++;
     this.elements["static"].push(f);
+    this.craetedElements.push(f);
     return f;
   };
 
@@ -476,6 +516,7 @@ Gamefield = (function() {
     o = new Obstracle(this, x, y);
     o.id = this.elements.id++;
     this.elements["static"].push(o);
+    this.craetedElements.push(o);
     return o;
   };
 
@@ -485,19 +526,36 @@ Gamefield = (function() {
     b = new Ball(this, x, y, player.color, player, this.options.player.size, this.options.player.speed);
     b.id = this.elements.id++;
     this.elements.moveable.push(b);
+    this.craetedElements.push(b);
     return b;
   };
 
-  Gamefield.prototype.createShoot = function(ball) {
-    var b;
-    b = new Shoot(this, ball.x, ball.y, ball.color);
+  Gamefield.prototype.createShoot = function(ball, target) {
+    var b, deg;
+    deg = Math.atan2(target.y, target.x);
+    b = new Shoot(this, ball.x + ball.size * 1.6 * Math.cos(deg), ball.y + ball.size * 1.6 * Math.sin(deg), ball.color);
     b.id = this.elements.id++;
+    ball.addMass(-this.options.shoot.mass);
+    if (b.x < 0) {
+      b.x = 0;
+    }
+    if (b.x > this.options.width) {
+      b.x = this.options.width;
+    }
+    if (b.y < 0) {
+      b.y = 0;
+    }
+    if (b.y > this.options.width) {
+      b.y = this.options.width;
+    }
+    b.setTarget(target);
     this.elements.moveable.push(b);
+    this.craetedElements.push(b);
     return b;
   };
 
   Gamefield.prototype.destroyElement = function(elem) {
-    var e, i, ref, ref1;
+    var e, i, ref, ref1, results, results1;
     if (elem instanceof StaticElement) {
       if (elem instanceof Food) {
         this.foodCount--;
@@ -506,31 +564,38 @@ Gamefield = (function() {
         this.obstracleCount--;
       }
       ref = this.elements["static"];
+      results = [];
       for (i in ref) {
         e = ref[i];
         if (e.id === elem.id) {
-          this.elements["static"].splice(i, 1);
+          results.push(this.elements["static"].splice(i, 1));
+        } else {
+          results.push(void 0);
         }
       }
+      return results;
     } else if (elem instanceof MoveableElement) {
       if (elem.player && elem instanceof Ball) {
         elem.player.removeBall(elem);
       }
       ref1 = this.elements.moveable;
+      results1 = [];
       for (i in ref1) {
         e = ref1[i];
         if (e.id === elem.id) {
-          this.elements.moveable.splice(i, 1);
+          results1.push(this.elements.moveable.splice(i, 1));
+        } else {
+          results1.push(void 0);
         }
       }
+      return results1;
     } else {
       throw "Element is not of type Element";
     }
-    return this.room.emit("deleteElement", elem.id);
   };
 
   Gamefield.prototype.update = function(timediff) {
-    var b, destoryLater, diff, e, elem, elem1, elem2, f, i, id, j, k, l, len, len1, len2, len3, m, n, o, ply, ref, ref1, ref2, ref3, ref4, sleep, splitThem, timerCollision, timerMoveables, timerOther;
+    var b, destoryLater, diff, e, elem, elem1, elem2, f, i, id, j, k, l, len, len1, len2, len3, len4, len5, len6, len7, n, o, p, ply, q, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, s, sendBufferSize, sleep, splitThem, timerCollision, timerMoveables, timerOther, u, v;
     this.playerUpdateTimer = process.hrtime();
     if (this.updaterStarted === 0) {
       return;
@@ -540,24 +605,30 @@ Gamefield = (function() {
       elem = ref[j];
       elem.update(timediff);
     }
+    ref1 = this.elements["static"];
+    for (k = 0, len1 = ref1.length; k < len1; k++) {
+      elem = ref1[k];
+      elem.update(timediff);
+    }
     timerMoveables = process.hrtime(this.playerUpdateTimer);
     timerMoveables = timerMoveables[0] * 1e3 + timerMoveables[1] * 1e-6;
     destoryLater = [];
-    ref1 = this.elements.moveable;
-    for (i in ref1) {
-      elem1 = ref1[i];
-      ref2 = this.elements["static"];
-      for (k = 0, len1 = ref2.length; k < len1; k++) {
-        elem2 = ref2[k];
+    ref2 = this.elements.moveable;
+    for (i in ref2) {
+      elem1 = ref2[i];
+      ref3 = this.elements["static"];
+      for (l = 0, len2 = ref3.length; l < len2; l++) {
+        elem2 = ref3[l];
         if (elem1.intercept(elem2)) {
           if (elem1.canEat(elem2)) {
             elem1.addMass(elem2.mass);
-            this.destroyElement(elem2);
+            destoryLater.push(elem2);
             if (elem1.player) {
               elem1.player.updateMass();
             }
             break;
           } else if (elem2.canEat(elem1)) {
+            elem1.addMass(-Math.floor(elem1.mass / 2));
             splitThem = [];
             if (elem1.mass > this.options.player.minSpitMass) {
               splitThem.push(elem1);
@@ -575,7 +646,7 @@ Gamefield = (function() {
                 elem1.player.balls.push(b);
               }
             }
-            this.destroyElement(elem2);
+            destoryLater.push(elem2);
             if (elem1.player) {
               elem1.player.updateMass();
             }
@@ -583,9 +654,9 @@ Gamefield = (function() {
           }
         }
       }
-      ref3 = this.elements.moveable;
-      for (l = 0, len2 = ref3.length; l < len2; l++) {
-        elem2 = ref3[l];
+      ref4 = this.elements.moveable;
+      for (n = 0, len3 = ref4.length; n < len3; n++) {
+        elem2 = ref4[n];
         if (elem1.id !== elem2.id && elem1.intercept(elem2)) {
           if (elem1.canEat(elem2)) {
             elem1.addMass(elem2.mass);
@@ -603,15 +674,15 @@ Gamefield = (function() {
         }
       }
     }
-    for (n = 0, len3 = destoryLater.length; n < len3; n++) {
-      e = destoryLater[n];
+    for (p = 0, len4 = destoryLater.length; p < len4; p++) {
+      e = destoryLater[p];
       this.destroyElement(e);
     }
     timerCollision = process.hrtime(this.playerUpdateTimer);
     timerCollision = timerCollision[0] * 1e3 + timerCollision[1] * 1e-6 - timerMoveables;
-    ref4 = this.player;
-    for (id in ref4) {
-      ply = ref4[id];
+    ref5 = this.player;
+    for (id in ref5) {
+      ply = ref5[id];
       if (id !== "length") {
         ply.update(timediff);
       }
@@ -620,7 +691,6 @@ Gamefield = (function() {
     if (this.foodSpawnTimer > 1 / this.options.food.spawn) {
       if (this.foodCount < this.options.food.max) {
         f = this.createFood();
-        this.room.emit("createStatic", f.get());
       }
       this.foodSpawnTimer = 0;
     }
@@ -628,20 +698,51 @@ Gamefield = (function() {
     if (this.obstracleSpawnTimer > 1 / this.options.obstracle.spawn) {
       if (this.obstracleCount < this.options.obstracle.max) {
         o = this.createObstracle();
-        this.room.emit("createStatic", o.get());
       }
       this.obstracleSpawnTimer = 0;
     }
-    this.room.emit("updateMoveables", (function() {
-      var len4, p, ref5, results;
-      ref5 = this.elements.moveable;
-      results = [];
-      for (p = 0, len4 = ref5.length; p < len4; p++) {
-        m = ref5[p];
-        results.push(m.get());
-      }
-      return results;
-    }).call(this));
+    this.room.emit("updateElements", {
+      deleted: (function() {
+        var len5, q, results;
+        results = [];
+        for (q = 0, len5 = destoryLater.length; q < len5; q++) {
+          e = destoryLater[q];
+          results.push(e.id);
+        }
+        return results;
+      })(),
+      created: (function() {
+        var len5, q, ref6, results;
+        ref6 = this.craetedElements;
+        results = [];
+        for (q = 0, len5 = ref6.length; q < len5; q++) {
+          e = ref6[q];
+          results.push(e.get());
+        }
+        return results;
+      }).call(this),
+      positions: (function() {
+        var len5, q, ref6, results;
+        ref6 = this.elements.moveable;
+        results = [];
+        for (q = 0, len5 = ref6.length; q < len5; q++) {
+          e = ref6[q];
+          results.push(e.getPos());
+        }
+        return results;
+      }).call(this)
+    });
+    this.craetedElements = [];
+    ref6 = this.elements.moveable;
+    for (q = 0, len5 = ref6.length; q < len5; q++) {
+      elem = ref6[q];
+      elem.sizechanged = false;
+    }
+    ref7 = this.elements["static"];
+    for (u = 0, len6 = ref7.length; u < len6; u++) {
+      elem = ref7[u];
+      elem.sizechanged = false;
+    }
     diff = process.hrtime(this.playerUpdateTimer);
     sleep = 1000 / 60 - (diff[0] * 1e3 + diff[1] * 1e-6);
     if (sleep >= 1) {
@@ -667,7 +768,17 @@ Gamefield = (function() {
     }
     this.timerOther.unshift(timerOther);
     if (!(this.timerOther.length > 1000 / 60)) {
-      return this.timerOther.pop;
+      this.timerOther.pop;
+    }
+    sendBufferSize = 0;
+    ref8 = this.room.sockets;
+    for (v = 0, len7 = ref8.length; v < len7; v++) {
+      s = ref8[v];
+      sendBufferSize += s.conn.writeBuffer.length;
+    }
+    this.sendBufferSize.unshift(sendBufferSize);
+    if (!(this.sendBufferSize.length > 1000 / 60)) {
+      return this.sendBufferSize.pop;
     }
   };
 
@@ -722,7 +833,7 @@ Obstracle = (function(superClass) {
 
   Obstracle.prototype.get = function() {
     return extend(Obstracle.__super__.get.call(this), {
-      type: "Obstracle"
+      type: "obstracle"
     });
   };
 
@@ -748,7 +859,8 @@ Ball = (function(superClass) {
   Ball.prototype.setMass = function(mass) {
     this.mass = mass;
     this.size = this.gamefield.options.player.size + 150 * Math.log((mass + 150) / 150);
-    return this.speed = this.gamefield.options.player.speed * Math.exp(-this.gamefield.options.player.speedPenalty * mass);
+    this.speed = this.gamefield.options.player.speed * Math.exp(-this.gamefield.options.player.speedPenalty * mass);
+    return this.sizechanged = true;
   };
 
   Ball.prototype.addMass = function(mass) {
@@ -821,6 +933,10 @@ Shoot = (function(superClass) {
       y: this.speed * Math.sin(deg)
     };
     return this.setBoost(vel, this.gamefield.options.shoot.acceleration);
+  };
+
+  Shoot.prototype.canEat = function(other) {
+    return false;
   };
 
   Shoot.prototype.setMass = function(mass) {
