@@ -45,6 +45,9 @@ module.exports = function (grunt) {
         }
       },
     },
+    gyp: {
+      GamefieldUpdater: { }
+    },
     uglify: {
       build: {
         options: {
@@ -72,5 +75,5 @@ module.exports = function (grunt) {
     }
   });
 
-  grunt.registerTask('default', ['coffee', 'uglify', 'mocha']);
+  grunt.registerTask('default', ['coffee', 'gyp', 'uglify', 'mocha']);
 };
