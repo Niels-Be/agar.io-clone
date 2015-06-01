@@ -13,7 +13,7 @@ class Ball extends MoveableElement
 		@setMass(@mass + mass)
 
 	canEat: (other) ->
-		other.size * @gamefield.options.player.eatFactor < @size
+		other.mass && other.size * @gamefield.options.player.eatFactor < @size
 
 	splitUp: (target) ->
 		deg = Math.atan2(target.y, target.x)

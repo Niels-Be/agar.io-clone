@@ -145,6 +145,7 @@ class Gamefield
 	destroyElement: (elem) ->
 		if elem instanceof StaticElement
 			@foodCount-- if elem instanceof Food
+			@obstracleCount-- if elem instanceof Obstracle
 			for i,e of @elements.static
 				@elements.static.splice(i, 1) if e.id == elem.id	
 		else if elem instanceof MoveableElement

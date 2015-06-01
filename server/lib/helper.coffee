@@ -1,7 +1,17 @@
+###
 extend = exports.extend = (object, properties) ->
 	for key, val of properties
 		object[key] = val
 	object
+###
+extend = exports.extend = (destination, source) ->
+	for key, val of source
+		if typeof val == "object" && val != null
+			destination[key] = destination[key] || {}
+			arguments.callee(destination[key], val)
+		else
+			destination[key] = val
+	destination
 
 sign = (x) ->
 	if x 

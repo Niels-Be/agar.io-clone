@@ -226,6 +226,15 @@
           return _this.join(_this.lastRoom);
         };
       })(this));
+      this.lobbySocket.on("roomCreated", (function(_this) {
+        return function(status, err) {
+          if (status) {
+            return _this.lobbySocket.emit("getRooms");
+          } else {
+            return console.log("Room Create:", err);
+          }
+        };
+      })(this));
       this.loop();
     }
 
@@ -487,7 +496,11 @@
     };
 
     Game.prototype.getStats = function() {
-      return this.socket.emit("getStats");
+      this.socket.emit("getStats");
+    };
+
+    Game.prototype.createRoom = function(name, options) {
+      this.lobbySocket.emit("createRoom", name, options);
     };
 
     return Game;

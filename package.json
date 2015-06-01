@@ -12,6 +12,7 @@
   "contributors": [
     "WaeCo <aaqqws@googlemail.com> (https://github.com/WaeCo)"
   ],
+  "repository": "git@github.com:WaeCo/agar.io-clone.git",
   "dependencies": {
     "express": "^4.12.4",
     "socket.io": "^1.3.5"

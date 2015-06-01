@@ -6,6 +6,7 @@ http = require('http').Server(app);
 io = require('socket.io')(http);
 
 app.use(express.static('client'));
+#app.use(express.static('../client'));
 
 rooms = { }
 
@@ -26,11 +27,14 @@ io.on "connection", (socket) =>
 	socket.on "createRoom", (name, options) =>
 		if not rooms.hasOwnProperty(name)
 			rooms[name] = new Gamefield(name, options)
+			socket.emit "roomCreated", true
 		else
-			socket.emit "roomCreateFailed", "Name already exists"
+			socket.emit "roomCreated", false, "Name already exists"
 
 	socket.on "error", (err) =>
 		console.log("Error:", err)
+
+
 
 
 serveraddress = process.env.OPENSHIFT_NODEJS_IP || process.env.IP || '127.0.0.1';

@@ -83,6 +83,13 @@ class Game
 				@roomsText.innerHTML += "<option value=\""+i+"\" "+(if @lastRoom == i then "selected=\"selected\"" else "")+">"+room.name+" ("+room.playercount+")</option>"
 			@join @lastRoom
 
+		@lobbySocket.on "roomCreated", (status, err) =>
+			if status
+				@lobbySocket.emit "getRooms"
+			else
+				console.log("Room Create:", err)
+
+
 		#stat the main loop
 		@loop()
 
@@ -285,6 +292,10 @@ class Game
 	#debug method to get performance information from the server
 	getStats: ->
 		@socket.emit "getStats"
+		return
+
+	createRoom: (name, options) ->
+		@lobbySocket.emit "createRoom", name, options
 		return
 
 

@@ -1,14 +1,26 @@
+
+/*
+extend = exports.extend = (object, properties) ->
+	for key, val of properties
+		object[key] = val
+	object
+ */
 var Ball, Element, Food, Gamefield, MoveableElement, Obstracle, Player, Shoot, StaticElement, app, express, extend, http, io, path, rooms, serveraddress, serverport, sign,
   extend1 = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
 
-extend = exports.extend = function(object, properties) {
+extend = exports.extend = function(destination, source) {
   var key, val;
-  for (key in properties) {
-    val = properties[key];
-    object[key] = val;
+  for (key in source) {
+    val = source[key];
+    if (typeof val === "object" && val !== null) {
+      destination[key] = destination[key] || {};
+      arguments.callee(destination[key], val);
+    } else {
+      destination[key] = val;
+    }
   }
-  return object;
+  return destination;
 };
 
 sign = function(x) {
@@ -484,6 +496,9 @@ Gamefield = (function() {
       if (elem instanceof Food) {
         this.foodCount--;
       }
+      if (elem instanceof Obstracle) {
+        this.obstracleCount--;
+      }
       ref = this.elements["static"];
       for (i in ref) {
         e = ref[i];
@@ -735,7 +750,7 @@ Ball = (function(superClass) {
   };
 
   Ball.prototype.canEat = function(other) {
-    return other.size * this.gamefield.options.player.eatFactor < this.size;
+    return other.mass && other.size * this.gamefield.options.player.eatFactor < this.size;
   };
 
   Ball.prototype.splitUp = function(target) {
@@ -859,9 +874,10 @@ io.on("connection", (function(_this) {
     });
     socket.on("createRoom", function(name, options) {
       if (!rooms.hasOwnProperty(name)) {
-        return rooms[name] = new Gamefield(name, options);
+        rooms[name] = new Gamefield(name, options);
+        return socket.emit("roomCreated", true);
       } else {
-        return socket.emit("roomCreateFailed", "Name already exists");
+        return socket.emit("roomCreated", false, "Name already exists");
       }
     });
     return socket.on("error", function(err) {
