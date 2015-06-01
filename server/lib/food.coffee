@@ -13,7 +13,12 @@ class Food extends StaticElement
 
 class Obstracle extends StaticElement
 
-	constructor: (@gamefield, @x, @y, @color, @size) ->
+	constructor: (@gamefield, @x, @y) ->
+		@color = @gamefield.options.obstracle.color
+		@size = @gamefield.options.obstracle.size
+
+	canEat: (other) ->
+		other.size * @gamefield.options.player.eatFactor > @size
 
 	get: ->
 		extend(super(), {

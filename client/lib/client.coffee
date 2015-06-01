@@ -100,7 +100,7 @@ class Game
 			@updatePlayer()
 			@gameStarted = true
 
-		@socket.on "createFood", (food) =>
+		@socket.on "createStatic", (food) =>
 			@elements.static[food.id] = new Ball(@options.food, food)
 
 		@socket.on "deleteElement", (id) =>

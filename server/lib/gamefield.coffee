@@ -18,10 +18,16 @@ class Gamefield
 			speedPenalty: 0.005
 			eatFactor: 1.2
 			minSpitMass: 20
+			maxMass: 1000 #0 to disable
 		shoot:
 			mass: 10
 			speed: 750
 			acceleration: 400
+		obstracle:
+			size: 50
+			max: 5
+			spawn: 0.2 #per Sec
+			color: '#00FF00'
 
 	constructor: (@name, options) ->
 		@options = extend (extend {}, Gamefield.defaultOptions), options
@@ -39,6 +45,9 @@ class Gamefield
 
 		@foodSpawnTimer = 0
 		@foodCount = 0
+
+		@obstracleSpawnTimer = 0
+		@obstracleCount = 0
 
 		@playerUpdateTimer = process.hrtime()
 
@@ -71,8 +80,8 @@ class Gamefield
 				console.log("Player "+name+" joind the game "+@name)
 				color = @options.player.color[Math.round(Math.random()*@options.player.color.length)]
 				ply = new Player(socket, name, color, @)
+				@player.length++ unless @player.hasOwnProperty socket.id
 				@player[socket.id] = ply
-				@player.length++
 				@room.emit "playerJoined", ply.get()
 				socket.emit "start", ply.get()
 
@@ -109,6 +118,14 @@ class Gamefield
 		f.id = @elements.id++
 		@elements.static.push f
 		f
+
+	createObstracle: ->
+		@obstracleCount++
+		[x, y] = @generatePos()
+		o = new Obstracle(@, x, y)
+		o.id = @elements.id++
+		@elements.static.push o
+		o
 
 	createBall: (player) ->
 		[x, y] = @generatePos()
@@ -160,8 +177,14 @@ class Gamefield
 		for i,elem1 of @elements.moveable
 			for elem2 in @elements.static
 				if elem1.intercept elem2
-					if elem1.canEat elem2
+					if elem1.canEat elem2 #food
 						elem1.addMass elem2.mass
+						@destroyElement elem2
+						elem1.player.updateMass() if elem1.player
+						break
+					else if elem2.canEat elem1 #obstracle
+						while elem1.mass > @options.player.minSpitMass
+							elem1.splitUp elem1.target
 						@destroyElement elem2
 						elem1.player.updateMass() if elem1.player
 						break
@@ -192,8 +215,16 @@ class Gamefield
 		if @foodSpawnTimer > 1 / @options.food.spawn
 			if @foodCount < @options.food.max
 				f = @createFood()
-				@room.emit "createFood", f.get()
+				@room.emit "createStatic", f.get()
 			@foodSpawnTimer = 0
+
+		#spawn new obstracles
+		@obstracleSpawnTimer += timediff
+		if @obstracleSpawnTimer > 1 / @options.obstracle.spawn
+			if @obstracleCount < @options.obstracle.max
+				o = @createObstracle()
+				@room.emit "createStatic", o.get()
+			@obstracleSpawnTimer = 0
 
 		#send new positions to clients
 		#TODO this takes a lot of time so
@@ -214,11 +245,11 @@ class Gamefield
 		timerOther = timerOther[0]*1e3 + timerOther[1]*1e-6 - timerCollision - timerMoveables
 
 		@timerMoveables.unshift timerMoveables
-		@timerMoveables.pop unless @timerMoveables.length > 1000
+		@timerMoveables.pop unless @timerMoveables.length > 1000 / 60
 		@timerCollision.unshift timerCollision
-		@timerCollision.pop unless @timerCollision.length > 1000
+		@timerCollision.pop unless @timerCollision.length > 1000 / 60
 		@timerOther.unshift timerOther
-		@timerOther.pop unless @timerOther.length > 1000
+		@timerOther.pop unless @timerOther.length > 1000 / 60
 
 	get: ->
 		{

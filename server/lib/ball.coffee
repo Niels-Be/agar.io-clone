@@ -15,6 +15,22 @@ class Ball extends MoveableElement
 	canEat: (other) ->
 		other.size * @gamefield.options.player.eatFactor < @size
 
+	splitUp: (target) ->
+		deg = Math.atan2(target.y, target.x)
+		vel = 
+			x: @gamefield.options.shoot.speed * Math.cos(deg)
+			y: @gamefield.options.shoot.speed * Math.sin(deg)
+
+		b = @gamefield.createBall(@player)
+		b.setMass Math.floor(@mass / 2)
+		@setMass Math.floor(@mass / 2)
+		#TODO check border
+		b.x = @x + @size*1.6 * Math.cos(deg)
+		b.y = @y + @size*1.6 * Math.sin(deg)
+		b.setTarget target
+		b.setBoost vel, @gamefield.options.shoot.acceleration
+		b
+
 	get: ->
 		extend(super(), {
 			name: @player.name if @player

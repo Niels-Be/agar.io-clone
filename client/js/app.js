@@ -253,7 +253,7 @@
           return _this.gameStarted = true;
         };
       })(this));
-      this.socket.on("createFood", (function(_this) {
+      this.socket.on("createStatic", (function(_this) {
         return function(food) {
           return _this.elements["static"][food.id] = new Ball(_this.options.food, food);
         };

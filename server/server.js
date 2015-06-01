@@ -37,26 +37,13 @@ Player = (function() {
   }
 
   Player.prototype.splitUp = function(target) {
-    var b, ball, deg, j, len, ref, vel;
-    deg = Math.atan2(target.y, target.x);
-    vel = {
-      x: this.room.options.shoot.speed * Math.cos(deg),
-      y: this.room.options.shoot.speed * Math.sin(deg)
-    };
+    var ball, j, len, ref;
     ref = this.balls;
     for (j = 0, len = ref.length; j < len; j++) {
       ball = ref[j];
-      if (!(ball.mass >= this.room.options.player.minSpitMass)) {
-        continue;
+      if (ball.mass >= this.room.options.player.minSpitMass) {
+        this.balls.push(ball.splitUp(target));
       }
-      b = this.room.createBall(this);
-      b.setMass(Math.floor(ball.mass / 2));
-      ball.setMass(Math.floor(ball.mass / 2));
-      b.x = ball.x + ball.size * 2 * Math.cos(deg);
-      b.y = ball.y + ball.size * 2 * Math.sin(deg);
-      b.setTarget(target);
-      b.setBoost(vel, this.room.options.shoot.acceleration);
-      this.balls.push(b);
     }
     return this.updateMass();
   };
@@ -79,15 +66,16 @@ Player = (function() {
     return this.updateMass();
   };
 
-  Player.prototype.setTarget = function(target) {
+  Player.prototype.setTarget = function(target1) {
     var ball, j, len, ref, results, t;
+    this.target = target1;
     ref = this.balls;
     results = [];
     for (j = 0, len = ref.length; j < len; j++) {
       ball = ref[j];
       t = {
-        x: target.x - (ball.x - this.x),
-        y: target.y - (ball.y - this.y)
+        x: this.target.x - (ball.x - this.x),
+        y: this.target.y - (ball.y - this.y)
       };
       results.push(ball.setTarget(t));
     }
@@ -130,6 +118,9 @@ Player = (function() {
     for (j = 0, len = ref.length; j < len; j++) {
       ball = ref[j];
       this.mass += ball.mass;
+    }
+    if (this.mass > this.room.options.player.maxMass && this.room.options.player.maxMass !== 0) {
+      splitUp(this.target);
     }
     return this.socket.emit("updatePlayer", this.get());
   };
@@ -311,12 +302,19 @@ Gamefield = (function() {
       speed: 300,
       speedPenalty: 0.005,
       eatFactor: 1.2,
-      minSpitMass: 20
+      minSpitMass: 20,
+      maxMass: 1000
     },
     shoot: {
       mass: 10,
       speed: 750,
       acceleration: 400
+    },
+    obstracle: {
+      size: 50,
+      max: 5,
+      spawn: 0.2,
+      color: '#00FF00'
     }
   };
 
@@ -336,6 +334,8 @@ Gamefield = (function() {
     };
     this.foodSpawnTimer = 0;
     this.foodCount = 0;
+    this.obstracleSpawnTimer = 0;
+    this.obstracleCount = 0;
     this.playerUpdateTimer = process.hrtime();
     this.timerMoveables = [];
     this.timerCollision = [];
@@ -384,8 +384,10 @@ Gamefield = (function() {
           console.log("Player " + name + " joind the game " + _this.name);
           color = _this.options.player.color[Math.round(Math.random() * _this.options.player.color.length)];
           ply = new Player(socket, name, color, _this);
+          if (!_this.player.hasOwnProperty(socket.id)) {
+            _this.player.length++;
+          }
           _this.player[socket.id] = ply;
-          _this.player.length++;
           _this.room.emit("playerJoined", ply.get());
           return socket.emit("start", ply.get());
         });
@@ -452,6 +454,16 @@ Gamefield = (function() {
     return f;
   };
 
+  Gamefield.prototype.createObstracle = function() {
+    var o, ref, x, y;
+    this.obstracleCount++;
+    ref = this.generatePos(), x = ref[0], y = ref[1];
+    o = new Obstracle(this, x, y);
+    o.id = this.elements.id++;
+    this.elements["static"].push(o);
+    return o;
+  };
+
   Gamefield.prototype.createBall = function(player) {
     var b, ref, x, y;
     ref = this.generatePos(), x = ref[0], y = ref[1];
@@ -500,7 +512,7 @@ Gamefield = (function() {
   };
 
   Gamefield.prototype.update = function(timediff) {
-    var destoryLater, diff, e, elem, elem1, elem2, f, i, id, j, k, l, len, len1, len2, len3, m, n, ply, ref, ref1, ref2, ref3, ref4, sleep, timerCollision, timerMoveables, timerOther;
+    var destoryLater, diff, e, elem, elem1, elem2, f, i, id, j, k, l, len, len1, len2, len3, m, n, o, ply, ref, ref1, ref2, ref3, ref4, sleep, timerCollision, timerMoveables, timerOther;
     this.playerUpdateTimer = process.hrtime();
     if (this.updaterStarted === 0) {
       return;
@@ -522,6 +534,15 @@ Gamefield = (function() {
         if (elem1.intercept(elem2)) {
           if (elem1.canEat(elem2)) {
             elem1.addMass(elem2.mass);
+            this.destroyElement(elem2);
+            if (elem1.player) {
+              elem1.player.updateMass();
+            }
+            break;
+          } else if (elem2.canEat(elem1)) {
+            while (elem1.mass > this.options.player.minSpitMass) {
+              elem1.splitUp(elem1.target);
+            }
             this.destroyElement(elem2);
             if (elem1.player) {
               elem1.player.updateMass();
@@ -567,9 +588,17 @@ Gamefield = (function() {
     if (this.foodSpawnTimer > 1 / this.options.food.spawn) {
       if (this.foodCount < this.options.food.max) {
         f = this.createFood();
-        this.room.emit("createFood", f.get());
+        this.room.emit("createStatic", f.get());
       }
       this.foodSpawnTimer = 0;
+    }
+    this.obstracleSpawnTimer += timediff;
+    if (this.obstracleSpawnTimer > 1 / this.options.obstracle.spawn) {
+      if (this.obstracleCount < this.options.obstracle.max) {
+        o = this.createObstracle();
+        this.room.emit("createStatic", o.get());
+      }
+      this.obstracleSpawnTimer = 0;
     }
     this.room.emit("updateMoveables", (function() {
       var len4, p, ref5, results;
@@ -597,15 +626,15 @@ Gamefield = (function() {
     timerOther = process.hrtime(this.playerUpdateTimer);
     timerOther = timerOther[0] * 1e3 + timerOther[1] * 1e-6 - timerCollision - timerMoveables;
     this.timerMoveables.unshift(timerMoveables);
-    if (!(this.timerMoveables.length > 1000)) {
+    if (!(this.timerMoveables.length > 1000 / 60)) {
       this.timerMoveables.pop;
     }
     this.timerCollision.unshift(timerCollision);
-    if (!(this.timerCollision.length > 1000)) {
+    if (!(this.timerCollision.length > 1000 / 60)) {
       this.timerCollision.pop;
     }
     this.timerOther.unshift(timerOther);
-    if (!(this.timerOther.length > 1000)) {
+    if (!(this.timerOther.length > 1000 / 60)) {
       return this.timerOther.pop;
     }
   };
@@ -647,13 +676,17 @@ Food = (function(superClass) {
 Obstracle = (function(superClass) {
   extend1(Obstracle, superClass);
 
-  function Obstracle(gamefield, x1, y1, color1, size) {
+  function Obstracle(gamefield, x1, y1) {
     this.gamefield = gamefield;
     this.x = x1;
     this.y = y1;
-    this.color = color1;
-    this.size = size;
+    this.color = this.gamefield.options.obstracle.color;
+    this.size = this.gamefield.options.obstracle.size;
   }
+
+  Obstracle.prototype.canEat = function(other) {
+    return other.size * this.gamefield.options.player.eatFactor > this.size;
+  };
 
   Obstracle.prototype.get = function() {
     return extend(Obstracle.__super__.get.call(this), {
@@ -692,6 +725,23 @@ Ball = (function(superClass) {
 
   Ball.prototype.canEat = function(other) {
     return other.size * this.gamefield.options.player.eatFactor < this.size;
+  };
+
+  Ball.prototype.splitUp = function(target) {
+    var b, deg, vel;
+    deg = Math.atan2(target.y, target.x);
+    vel = {
+      x: this.gamefield.options.shoot.speed * Math.cos(deg),
+      y: this.gamefield.options.shoot.speed * Math.sin(deg)
+    };
+    b = this.gamefield.createBall(this.player);
+    b.setMass(Math.floor(this.mass / 2));
+    this.setMass(Math.floor(this.mass / 2));
+    b.x = this.x + this.size * 1.6 * Math.cos(deg);
+    b.y = this.y + this.size * 1.6 * Math.sin(deg);
+    b.setTarget(target);
+    b.setBoost(vel, this.gamefield.options.shoot.acceleration);
+    return b;
   };
 
   Ball.prototype.get = function() {

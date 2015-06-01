@@ -11,22 +11,8 @@ class Player
 		@mass = 0
 
 	splitUp: (target) ->
-		deg = Math.atan2(target.y, target.x)
-		vel = 
-			x: @room.options.shoot.speed * Math.cos(deg)
-			y: @room.options.shoot.speed * Math.sin(deg)
-
 		for ball in @balls when ball.mass >= @room.options.player.minSpitMass
-			b = @room.createBall(@)
-			b.setMass Math.floor(ball.mass / 2)
-			ball.setMass Math.floor(ball.mass / 2)
-			#TODO check border
-			b.x = ball.x + ball.size*2 * Math.cos(deg)
-			b.y = ball.y + ball.size*2 * Math.sin(deg)
-			b.setTarget target
-			b.setBoost vel, @room.options.shoot.acceleration
-			
-			@balls.push b
+			@balls.push ball.splitUp target
 		#console.log("Player "+@name+" split")
 		@updateMass()
 
@@ -41,12 +27,12 @@ class Player
 			b.setTarget target
 		@updateMass()
 
-	setTarget: (target) ->
+	setTarget: (@target) ->
 		for ball in @balls
 			t = #TODO something is still wrong here
 				#     maybe player pos on server and client differ
-				x: target.x - (ball.x - @x)
-				y: target.y - (ball.y - @y)
+				x: @target.x - (ball.x - @x)
+				y: @target.y - (ball.y - @y)
 			ball.setTarget(t)
 
 	removeBall: (ball) ->
@@ -67,6 +53,8 @@ class Player
 		@mass = 0
 		for ball in @balls
 			@mass += ball.mass
+		if @mass > @room.options.player.maxMass && @room.options.player.maxMass != 0
+			splitUp @target
 		@socket.emit "updatePlayer", @get()
 
 	get: ->
