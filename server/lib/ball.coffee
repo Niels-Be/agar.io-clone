@@ -9,6 +9,7 @@ class Ball extends MoveableElement
 		#TODO look for better functions exponential is to hard
 		@size = @gamefield.options.player.size + 150 * Math.log((mass+150)/150)
 		@speed = @gamefield.options.player.speed * Math.exp(-@gamefield.options.player.speedPenalty * mass)
+		@sizechanged = true
 	addMass: (mass) ->
 		@setMass(@mass + mass)
 
@@ -55,6 +56,9 @@ class Shoot extends Ball
 			x: @speed * Math.cos(deg)
 			y: @speed * Math.sin(deg)
 		@setBoost(vel, @gamefield.options.shoot.acceleration)
+
+	canEat: (other) ->
+		false #Shoots can not eat (but it would be a funny feature)
 
 	setMass: (mass) ->
 		speed = @speed

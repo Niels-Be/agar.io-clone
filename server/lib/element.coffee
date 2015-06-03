@@ -2,6 +2,7 @@ class Element
 
 	constructor: (@gamefield, @x, @y, @color, @size = 1) ->
 		@id = -1
+		@sizechanged = false
 
 	intercept: (other) ->
 		distance = (@x - other.x) * (@x - other.x) + (@y - other.y) * (@y - other.y)
@@ -19,6 +20,15 @@ class Element
 			size: @size
 		}
 
+	getPos: ->
+		res =
+			id: @id
+			x: @x
+			y: @y
+		if @sizechanged #save some bytes
+			res.size = @size 
+		res
+
 class StaticElement extends Element
 
 	update: (t) ->
@@ -27,6 +37,8 @@ class StaticElement extends Element
 class MoveableElement extends Element
 
 	constructor: (@gamefield, @x, @y, @color, @size = 1, @speed = 100) ->
+		super(@gamefield, @x, @y, @color, @size)
+		
 		@velocity =
 			x: 0
 			y: 0
@@ -95,6 +107,14 @@ class MoveableElement extends Element
 			@y += deltaY
 
 	get: ->
+		vel = 
+			x: (@boostVel.x + @velocity.x)
+			y: (@boostVel.y + @velocity.y)
+		extend(super(), {
+			velocity: vel
+		})
+
+	getPos: ->
 		vel = 
 			x: (@boostVel.x + @velocity.x)
 			y: (@boostVel.y + @velocity.y)

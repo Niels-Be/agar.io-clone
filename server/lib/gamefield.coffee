@@ -43,6 +43,8 @@ class Gamefield
 			moveable: []
 			id: 1
 
+		@craetedElements = []
+
 		@foodSpawnTimer = 0
 		@foodCount = 0
 
@@ -54,6 +56,7 @@ class Gamefield
 		@timerMoveables = []
 		@timerCollision = []
 		@timerOther = []
+		@sendBufferSize = []
 
 		@updaterStarted = 0
 
@@ -69,16 +72,15 @@ class Gamefield
 
 			socket.on "join", =>
 				console.log("Client is ready")
-				socket.emit "updateMoveables", (s.get() for s in @elements.moveable)
-				socket.emit "updateStatics", (s.get() for s in @elements.static)
+				socket.emit "setElements", [(s.get() for s in @elements.moveable)..., (s.get() for s in @elements.static)...]
 
 			socket.on "leave", =>
 				console.log("Client left room "+@name)
 				socket.disconnect()
 
 			socket.on "start", (name) =>
-				console.log("Player "+name+" joind the game "+@name)
 				color = @options.player.color[Math.round(Math.random()*@options.player.color.length)]
+				console.log("Player "+name+"("+color+") joind the game "+@name)
 				ply = new Player(socket, name, color, @)
 				@player.length++ unless @player.hasOwnProperty socket.id
 				@player[socket.id] = ply
@@ -96,16 +98,16 @@ class Gamefield
 					@player.length--
 
 			socket.on "getStats", =>
-				m = c = o = 0
+				m = c = o = b = 0
 				m+= tm for tm in @timerMoveables
 				c+= tm for tm in @timerCollision
 				o+= tm for tm in @timerOther
-				console.log(m, c, o)
+				b+= tm for tm in @sendBufferSize
 				socket.emit "stats", 
 					moveables: m / @timerMoveables.length
 					collision: c / @timerCollision.length
 					other: o / @timerOther.length
-
+					sendBuffer: b / @sendBufferSize.length
 
 
 	generatePos: ->
@@ -117,6 +119,7 @@ class Gamefield
 		f = new Food(@, x, y)
 		f.id = @elements.id++
 		@elements.static.push f
+		@craetedElements.push f
 		f
 
 	createObstracle: ->
@@ -125,6 +128,7 @@ class Gamefield
 		o = new Obstracle(@, x, y)
 		o.id = @elements.id++
 		@elements.static.push o
+		@craetedElements.push o
 		o
 
 	createBall: (player) ->
@@ -132,17 +136,30 @@ class Gamefield
 		b = new Ball(@, x, y, player.color, player, @options.player.size, @options.player.speed)
 		b.id = @elements.id++
 		@elements.moveable.push b
+		@craetedElements.push b
 		b
 
 	#Shoots are kind of static moveables because after some time they stop moving
 	#So maybe create some functionality to switch them from moveable list to static list
-	createShoot: (ball) ->
-		b = new Shoot(@, ball.x, ball.y, ball.color)
+	createShoot: (ball, target) ->
+		deg = Math.atan2(target.y, target.x)
+
+		b = new Shoot(@, ball.x + ball.size*1.6 * Math.cos(deg), ball.y + ball.size*1.6 * Math.sin(deg), ball.color)
 		b.id = @elements.id++
+		ball.addMass -@options.shoot.mass
+		#check if outside map
+		b.x = 0 if b.x < 0
+		b.x = @options.width if b.x > @options.width
+		b.y = 0 if b.y < 0
+		b.y = @options.width if b.y > @options.width
+		b.setTarget target
 		@elements.moveable.push b
+		@craetedElements.push b
 		b
 
+
 	destroyElement: (elem) ->
+		#TODO this is not the beste way to check this
 		if elem instanceof StaticElement
 			@foodCount-- if elem instanceof Food
 			@obstracleCount-- if elem instanceof Obstracle
@@ -154,7 +171,7 @@ class Gamefield
 				@elements.moveable.splice(i, 1) if e.id == elem.id
 		else
 			throw "Element is not of type Element"
-		@room.emit "deleteElement", elem.id
+		#@room.emit "deleteElement", elem.id
 
 	update: (timediff) ->
 		@playerUpdateTimer = process.hrtime()
@@ -168,6 +185,8 @@ class Gamefield
 		#     unless the size is big enough to eat them self
 		for elem in @elements.moveable
 			elem.update timediff
+		for elem in @elements.static
+			elem.update timediff
 
 		timerMoveables = process.hrtime(@playerUpdateTimer)
 		timerMoveables = timerMoveables[0]*1e3 + timerMoveables[1]*1e-6
@@ -180,7 +199,7 @@ class Gamefield
 				if elem1.intercept elem2
 					if elem1.canEat elem2 #food
 						elem1.addMass elem2.mass
-						@destroyElement elem2
+						destoryLater.push elem2
 						elem1.player.updateMass() if elem1.player
 						break
 					else if elem2.canEat elem1 #obstracle
@@ -194,7 +213,7 @@ class Gamefield
 							splitThem.push e if e.mass > @options.player.minSpitMass
 							splitThem.push b if b.mass > @options.player.minSpitMass
 							elem1.player.balls.push b if elem1.player
-						@destroyElement elem2
+						destoryLater.push elem2
 						elem1.player.updateMass() if elem1.player
 						break
 			for elem2 in @elements.moveable
@@ -224,7 +243,7 @@ class Gamefield
 		if @foodSpawnTimer > 1 / @options.food.spawn
 			if @foodCount < @options.food.max
 				f = @createFood()
-				@room.emit "createStatic", f.get()
+				#@room.emit "createStatic", f.get()
 			@foodSpawnTimer = 0
 
 		#spawn new obstracles
@@ -232,13 +251,23 @@ class Gamefield
 		if @obstracleSpawnTimer > 1 / @options.obstracle.spawn
 			if @obstracleCount < @options.obstracle.max
 				o = @createObstracle()
-				@room.emit "createStatic", o.get()
+				#@room.emit "createStatic", o.get()
 			@obstracleSpawnTimer = 0
 
 		#send new positions to clients
 		#TODO this takes a lot of time so
 		#we have to reduce data that is send every frame
-		@room.emit "updateMoveables", (m.get() for m in @elements.moveable)
+		@room.emit "updateElements", 
+			deleted: (e.id for e in destoryLater)
+			created: (e.get() for e in @craetedElements)
+			positions: (e.getPos() for e in @elements.moveable)
+
+		#reset lists
+		@craetedElements = []
+		for elem in @elements.moveable
+			elem.sizechanged = false
+		for elem in @elements.static
+			elem.sizechanged = false
 
 		diff = process.hrtime(@playerUpdateTimer)
 		sleep = 1000 / 60 - (diff[0]*1e3 + diff[1]*1e-6)
@@ -259,6 +288,10 @@ class Gamefield
 		@timerCollision.pop unless @timerCollision.length > 1000 / 60
 		@timerOther.unshift timerOther
 		@timerOther.pop unless @timerOther.length > 1000 / 60
+		sendBufferSize = 0
+		sendBufferSize += s.conn.writeBuffer.length for s in @room.sockets
+		@sendBufferSize.unshift sendBufferSize
+		@sendBufferSize.pop unless @sendBufferSize.length > 1000 / 60
 
 	get: ->
 		{

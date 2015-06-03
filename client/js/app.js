@@ -14,7 +14,6 @@
     function Ball(options1, data) {
       this.options = options1;
       extend(this, data);
-      this.updates = 0;
     }
 
     Ball.prototype.updateData = function(data) {
@@ -22,7 +21,6 @@
     };
 
     Ball.prototype.update = function(t) {
-      this.updates++;
       if (this.velocity) {
         this.x += this.velocity.x * t;
         return this.y += this.velocity.y * t;
@@ -159,18 +157,28 @@
         fillColor: "#f1c40f",
         size: 5
       },
+      obstracle: {
+        border: 5,
+        borderColor: "#006600",
+        fillColor: "#00FF00"
+      },
+      shoot: {
+        border: 2,
+        borderColor: "#f39c12",
+        fillColor: "#FF0000"
+      },
       player: {
-        border: 3,
-        borderColor: "#c0392b",
+        border: 5,
+        borderColor: "#FFFFCC",
         fillColor: "#ea6153",
         textColor: "#FFFFFF",
         textBorder: "#000000",
         textBorderSize: 3,
         defaultSize: 10
       },
-      enemy: {
-        border: 3,
-        borderColor: "#27ae60",
+      ball: {
+        border: 5,
+        borderColor: "#CC0000",
         fillColor: "#c0392b",
         textColor: "#FFFFFF",
         textBorder: "#000000",
@@ -185,10 +193,7 @@
       size: 0
     };
 
-    Game.prototype.elements = {
-      "static": {},
-      moveable: {}
-    };
+    Game.prototype.elements = {};
 
     Game.prototype.target = {
       x: 0,
@@ -262,48 +267,43 @@
           return _this.gameStarted = true;
         };
       })(this));
-      this.socket.on("createStatic", (function(_this) {
-        return function(food) {
-          return _this.elements["static"][food.id] = new Ball(_this.options.food, food);
-        };
-      })(this));
-      this.socket.on("deleteElement", (function(_this) {
-        return function(id) {
-          if (_this.elements["static"].hasOwnProperty(id)) {
-            delete _this.elements["static"][id];
-          }
-          if (_this.elements.moveable.hasOwnProperty(id)) {
-            return delete _this.elements.moveable[id];
-          }
-        };
-      })(this));
-      this.socket.on("updateStatics", (function(_this) {
+      this.socket.on("setElements", (function(_this) {
         return function(objs) {
           var j, len, o, results;
-          _this.elements["static"] = {};
+          _this.elements = {};
           results = [];
           for (j = 0, len = objs.length; j < len; j++) {
             o = objs[j];
-            results.push(_this.elements["static"][o.id] = new Ball(_this.options.food, o));
+            results.push(_this.elements[o.id] = new Ball(_this.options[o.type], o));
           }
           return results;
         };
       })(this));
-      this.socket.on("updateMoveables", (function(_this) {
+      this.socket.on("updateElements", (function(_this) {
         return function(objs) {
-          var b, j, k, len, len1, o, ref, results;
-          _this.elements.moveable = {};
-          for (j = 0, len = objs.length; j < len; j++) {
-            o = objs[j];
-            _this.elements.moveable[o.id] = new Ball(_this.options.enemy, o);
+          var b, j, k, l, len, len1, len2, len3, n, o, ref, ref1, ref2, ref3, results;
+          ref = objs.created;
+          for (j = 0, len = ref.length; j < len; j++) {
+            o = ref[j];
+            _this.elements[o.id] = new Ball(_this.options[o.type], o);
+          }
+          ref1 = objs.deleted;
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            o = ref1[k];
+            delete _this.elements[o];
+          }
+          ref2 = objs.positions;
+          for (l = 0, len2 = ref2.length; l < len2; l++) {
+            o = ref2[l];
+            _this.elements[o.id].updateData(o);
           }
           if (_this.player.balls) {
-            ref = _this.player.balls;
+            ref3 = _this.player.balls;
             results = [];
-            for (k = 0, len1 = ref.length; k < len1; k++) {
-              b = ref[k];
-              if (_this.elements.moveable.hasOwnProperty(b)) {
-                results.push(_this.elements.moveable[b].options = _this.options.player);
+            for (n = 0, len3 = ref3.length; n < len3; n++) {
+              b = ref3[n];
+              if (_this.elements.hasOwnProperty(b)) {
+                results.push(_this.elements[b].options = _this.options.player);
               }
             }
             return results;
@@ -434,7 +434,7 @@
 
     Game.prototype.update = function(timediff) {
       var i, m, ref;
-      ref = this.elements.moveable;
+      ref = this.elements;
       for (i in ref) {
         m = ref[i];
         m.update(timediff);
@@ -457,18 +457,18 @@
         ref = this.player.balls;
         for (j = 0, len = ref.length; j < len; j++) {
           b = ref[j];
-          if (this.elements.moveable.hasOwnProperty(b)) {
-            this.player.size += this.elements.moveable[b].size;
+          if (this.elements.hasOwnProperty(b)) {
+            this.player.size += this.elements[b].size;
           }
         }
         ref1 = this.player.balls;
         for (k = 0, len1 = ref1.length; k < len1; k++) {
           b = ref1[k];
-          if (!(this.elements.moveable.hasOwnProperty(b))) {
+          if (!(this.elements.hasOwnProperty(b))) {
             continue;
           }
-          this.player.x += this.elements.moveable[b].x * this.elements.moveable[b].size;
-          this.player.y += this.elements.moveable[b].y * this.elements.moveable[b].size;
+          this.player.x += this.elements[b].x * this.elements[b].size;
+          this.player.y += this.elements[b].y * this.elements[b].size;
         }
         this.player.x /= this.player.size;
         this.player.y /= this.player.size;
@@ -481,22 +481,17 @@
     };
 
     Game.prototype.render = function() {
-      var i, m, ref, ref1, results, s, scale;
+      var i, m, ref, results, scale;
       this.graph.setTransform(1, 0, 0, 1, 0, 0);
       this.graph.fillStyle = this.options.backgroundColor;
       this.graph.fillRect(0, 0, this.screen.width, this.screen.height);
       scale = 1 / (this.options.viewPortScaleFactor * this.player.size + 1);
       this.graph.setTransform(scale, 0, 0, scale, this.screen.width / 2 - this.player.x * scale, this.screen.height / 2 - this.player.y * scale);
       this.grid.render(this.graph);
-      ref = this.elements["static"];
-      for (i in ref) {
-        s = ref[i];
-        s.render(this.graph);
-      }
-      ref1 = this.elements.moveable;
+      ref = this.elements;
       results = [];
-      for (i in ref1) {
-        m = ref1[i];
+      for (i in ref) {
+        m = ref[i];
         results.push(m.render(this.graph));
       }
       return results;

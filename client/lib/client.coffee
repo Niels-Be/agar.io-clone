@@ -25,26 +25,36 @@ class Game
 
 		food:
 			border: 2,
-			borderColor: "#f39c12",
-			fillColor: "#f1c40f",
+			borderColor: "#f39c12"
+			fillColor: "#f1c40f"
 			size: 5
 
+		obstracle:
+			border: 5
+			borderColor: "#006600"
+			fillColor: "#00FF00"
+
+		shoot:
+			border: 2
+			borderColor: "#f39c12"
+			fillColor: "#FF0000"
+
 		player:
-			border: 3,
-			borderColor: "#c0392b",
-			fillColor: "#ea6153", #fallback color
-			textColor: "#FFFFFF",
-			textBorder: "#000000",
-			textBorderSize: 3,
+			border: 5
+			borderColor: "#FFFFCC"
+			fillColor: "#ea6153" #fallback color
+			textColor: "#FFFFFF"
+			textBorder: "#000000"
+			textBorderSize: 3
 			defaultSize: 10
 
-		enemy:
-			border: 3,
-			borderColor: "#27ae60",
-			fillColor: "#c0392b", #fallback color
-			textColor: "#FFFFFF",
-			textBorder: "#000000",
-			textBorderSize: 3,
+		ball:
+			border: 5
+			borderColor: "#CC0000"
+			fillColor: "#c0392b" #fallback color
+			textColor: "#FFFFFF"
+			textBorder: "#000000"
+			textBorderSize: 3
 			defaultSize: 10
 
 	player: 
@@ -52,9 +62,7 @@ class Game
 		y: 0
 		size: 0
 
-	elements:
-		static: {}
-		moveable: {}	
+	elements: {}	
 
 	target:
 		x: 0
@@ -107,30 +115,23 @@ class Game
 			@updatePlayer()
 			@gameStarted = true
 
-		@socket.on "createStatic", (food) =>
-			@elements.static[food.id] = new Ball(@options.food, food)
-
-		@socket.on "deleteElement", (id) =>
-			delete @elements.static[id] if @elements.static.hasOwnProperty(id)
-			delete @elements.moveable[id] if @elements.moveable.hasOwnProperty(id)
-
-		@socket.on "updateStatics", (objs) =>
+		@socket.on "setElements", (objs) =>
 			#just replace the entiere list
-			@elements.static = {}
+			@elements = {}
 			for o in objs
-				#assume all stacis are food
-				@elements.static[o.id] = new Ball(@options.food, o)
+				@elements[o.id] = new Ball(@options[o.type], o)
 
-		@socket.on "updateMoveables", (objs) =>
-			#just replace the entiere list
-			@elements.moveable = {}
-			for o in objs
-				#assume all moveables are enemies
-				@elements.moveable[o.id] = new Ball(@options.enemy, o)
+		@socket.on "updateElements", (objs) =>
+			for o in objs.created
+				@elements[o.id] = new Ball(@options[o.type], o)
+			for o in objs.deleted
+				delete @elements[o]
+			for o in objs.positions
+				@elements[o.id].updateData(o)
 			#a bit hacky but faster then checking every moveable
 			if @player.balls
-				for b in @player.balls when @elements.moveable.hasOwnProperty(b)
-					@elements.moveable[b].options = @options.player
+				for b in @player.balls when @elements.hasOwnProperty(b)
+					@elements[b].options = @options.player
 
 		@socket.on "updatePlayer", (@player) =>
 			@massText.innerHTML = "Mass: "+@player.mass
@@ -233,7 +234,7 @@ class Game
 
 	#pre calculate positions of the next frame to reduce lag
 	update: (timediff) ->
-		for i,m of @elements.moveable
+		for i,m of @elements
 			m.update timediff
 		@updatePlayer()
 		@socket.emit "updateTarget", @target
@@ -250,11 +251,11 @@ class Game
 		if @gameStarted
 			#center the camera in the middle of all balls
 			@player.x = @player.y = @player.size = 0
-			for b in @player.balls when @elements.moveable.hasOwnProperty(b)
-				@player.size += @elements.moveable[b].size
-			for b in @player.balls when @elements.moveable.hasOwnProperty(b)
-				@player.x += @elements.moveable[b].x * @elements.moveable[b].size
-				@player.y += @elements.moveable[b].y * @elements.moveable[b].size
+			for b in @player.balls when @elements.hasOwnProperty(b)
+				@player.size += @elements[b].size
+			for b in @player.balls when @elements.hasOwnProperty(b)
+				@player.x += @elements[b].x * @elements[b].size
+				@player.y += @elements[b].y * @elements[b].size
 			@player.x /= @player.size 
 			@player.y /= @player.size 
 			@player.size /= @player.balls.length
@@ -288,10 +289,8 @@ class Game
 
 		@grid.render(@graph)
 		
-		for i,s of @elements.static
-			s.render(@graph)
-		for i,m of @elements.moveable
-			m.render(@graph) #unless m == @player
+		for i,m of @elements
+			m.render(@graph)
 
 	#debug method to get performance information from the server
 	getStats: ->
