@@ -3,3 +3,5 @@ npm-debug.log
 .idea
 client/bower_components
 build
+CMakeCache.txt
+CMakeFiles
