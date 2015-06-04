@@ -171,8 +171,8 @@ ElementPtr Gamefield::createObstracle() {
 }
 
 void Gamefield::onConnection(SocketIO* sender, const v8::FunctionCallbackInfo<v8::Value>& params) {
-	SocketIO* socket = new SocketIO(params[0]->ToObject());
-	setCallbacks(socket);
+	//SocketIO* socket = new SocketIO(params[0]->ToObject());
+	//setCallbacks(socket);
 }
 
 void Gamefield::onJoin(SocketIO* sender, const v8::FunctionCallbackInfo<v8::Value>& params) {

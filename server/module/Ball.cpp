@@ -22,8 +22,8 @@ BallPtr Ball::splitUp(const Vector& direction) {
 	b->setMass(mMass / 2);
 	this->setMass(mMass / 2);
 
-	b->mPosition.x = min(max(mPosition.x + direction.x * mSize * 1.6, 0), mGamefield->getOptions().width);
-	b->mPosition.y = min(max(mPosition.y + direction.y * mSize * 1.6, 0), mGamefield->getOptions().height);
+	b->mPosition.x = min(max(mPosition.x + direction.x * mSize * 1.6, 0.), mGamefield->getOptions().width);
+	b->mPosition.y = min(max(mPosition.y + direction.y * mSize * 1.6, 0.), mGamefield->getOptions().height);
 	//TODO deflect on wall
 
 	b->setDirection(direction);
@@ -36,8 +36,8 @@ BallPtr Ball::splitUp(const Vector& direction) {
 
 ShootPtr Ball::shoot(const Vector& direction) {
 	Vector pos(
-			min(max(mPosition.x + direction.x * mSize * 1.6, 0), mGamefield->getOptions().width),
-			min(max(mPosition.y + direction.y * mSize * 1.6, 0), mGamefield->getOptions().height)
+			min(max(mPosition.x + direction.x * mSize * 1.6, 0.), mGamefield->getOptions().width),
+			min(max(mPosition.y + direction.y * mSize * 1.6, 0.), mGamefield->getOptions().height)
 	);
 	ShootPtr b = mGamefield->createShoot(pos, mColor, direction);
 	this->addMass(-mGamefield->getOptions().shoot.mass);

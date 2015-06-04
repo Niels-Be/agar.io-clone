@@ -44,9 +44,9 @@ void MoveableElement::update(double timediff) {
 
 	if (hasChanged()) {
 		//do not let them move outside the gamefield
-		mPosition.x = min(max(mPosition.x + (mVelocity.x + mBoostVelocity.x) * timediff, 0),
+		mPosition.x = min(max(mPosition.x + (mVelocity.x + mBoostVelocity.x) * timediff, 0.),
 						  mGamefield->getOptions().width);
-		mPosition.y = min(max(mPosition.y + (mVelocity.y + mBoostVelocity.y) * timediff, 0),
+		mPosition.y = min(max(mPosition.y + (mVelocity.y + mBoostVelocity.y) * timediff, 0.),
 						  mGamefield->getOptions().height);
 	}
 }
