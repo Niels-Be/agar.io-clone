@@ -1,5 +1,5 @@
 class Game
-	net: new Network("ws://localhost:3000")
+	net: new Network("ws://"+window.location.host+"/websocket/")
 
 	screen:
 		width: window.innerWidth

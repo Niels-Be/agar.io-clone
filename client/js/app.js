@@ -455,7 +455,7 @@
   })();
 
   Game = (function() {
-    Game.prototype.net = new Network("ws://localhost:3000");
+    Game.prototype.net = new Network("ws://" + window.location.host + "/websocket/");
 
     Game.prototype.screen = {
       width: window.innerWidth,
