@@ -20,5 +20,6 @@ void Client::handlePacket(PacketPtr packet) {
 }
 
 void Client::handleDisconnect() {
-	mPacketHandler[(uint8_t)-1](shared_from_this(), PacketPtr());
+	if(mOnDisconnectCallback)
+		mOnDisconnectCallback(shared_from_this());
 }

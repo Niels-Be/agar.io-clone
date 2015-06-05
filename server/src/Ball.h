@@ -15,8 +15,11 @@ private:
 	double mStarveMass = 0;
 
 public:
-	Ball(GamefieldPtr mGamefield, uint64_t mId, const Vector& mPosition, PlayerPtr player);
-	Ball(GamefieldPtr mGamefield, uint64_t mId, const Vector& mPosition, PlayerPtr player, int32_t mass);
+	Ball(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, PlayerPtr player);
+	Ball(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, PlayerPtr player, int32_t mass);
+	virtual ~Ball() {}
+
+	const PlayerPtr& getPlayer() const { return mPlayer; }
 
 	virtual void setMass(int32_t mass);
 
@@ -26,8 +29,9 @@ public:
 
 	ShootPtr shoot(const Vector& direction);
 
-
 	virtual void update(double timediff);
+
+	virtual ElementData get() const;
 
 	virtual ElementType getType() const { return ET_Ball; }
 };

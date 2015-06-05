@@ -5,7 +5,7 @@
 #include "Shoot.h"
 #include "Gamefield.h"
 
-Shoot::Shoot(GamefieldPtr mGamefield, uint64_t mId, const Vector& mPosition, const String& mColor,
+Shoot::Shoot(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, const String& mColor,
 			 const Vector& direction) :
 		MoveableElement(mGamefield, mId, mPosition, mColor, mGamefield->getOptions().shoot.size,
 						mGamefield->getOptions().shoot.mass) {

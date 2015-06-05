@@ -12,7 +12,7 @@ class Obstracle : public Element {
 private:
 	int mEatCount = 0;
 public:
-	Obstracle(GamefieldPtr mGamefield, uint64_t mId, const Vector& mPosition);
+	Obstracle(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition);
 
 	virtual bool tryEat(ElementPtr other);
 

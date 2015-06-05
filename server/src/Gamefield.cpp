@@ -9,6 +9,28 @@
 #include "Shoot.h"
 #include "Food.h"
 #include "Obstracle.h"
+#include "Network/Client.h"
+#include "Network/Server.h"
+#include "Network/AgarPackets.h"
+
+#include <thread>
+
+using std::placeholders::_1;
+using std::placeholders::_2;
+
+Gamefield::Gamefield(ServerPtr server) : mServer(server) {
+	mServer->setOnConnected(std::bind(&Gamefield::onConnected, this, _1));
+
+	//for(uint i = 0; i < mOptions.food.max/2; i++)
+	//	createFood();
+}
+
+
+Gamefield::~Gamefield() {
+	mUpdaterRunning = false;
+	if(mUpdaterThread.joinable())
+		mUpdaterThread.join();
+}
 
 BallPtr Gamefield::createBall(PlayerPtr player) {
 	BallPtr b = std::make_shared<Ball>(shared_from_this(), mElementIds++, generatePos(), player);
@@ -37,7 +59,10 @@ void Gamefield::destroyElement(Element* elem) {
 		//Swap with last element then pop last (no realocation needed)
 		(*it) = std::move(mElements.back());
 		mElements.pop_back();
-
+		if (elem->getType() == ET_Ball) {
+			auto ball = std::dynamic_pointer_cast<Ball>(*it);
+			ball->getPlayer()->removeBall(ball);
+		}
 		if (elem->getType() == ET_Food)
 			mFoodCounter--;
 		if (elem->getType() == ET_Obstracle)
@@ -45,8 +70,50 @@ void Gamefield::destroyElement(Element* elem) {
 	}
 }
 
+
+void Gamefield::sendToAll(PacketPtr packet) {
+	for(ClientPtr c : mClients)
+		c->emit(packet);
+}
+
 Vector Gamefield::generatePos() {
 	return Vector((rand() / (double) RAND_MAX) * mOptions.width, (rand() / (double) RAND_MAX) * mOptions.height);
+}
+
+
+void Gamefield::startUpdater() {
+	printf("Starting Updater\n");
+	if(mUpdaterRunning) return;
+	if(mUpdaterThread.joinable()) {
+		printf("Waiting for old one ...");
+		mUpdaterThread.join();
+		printf(" Done\n");
+	}
+	printf("Creating new thread\n");
+	mUpdaterThread = (std::thread(std::bind(&Gamefield::updateLoop, this)));
+}
+
+void Gamefield::updateLoop() {
+	using namespace std::chrono;
+	using timer=std::chrono::high_resolution_clock;
+
+	mUpdaterRunning = true;
+	printf("Updater started\n");
+
+
+	timer::duration timestamp = timer::now().time_since_epoch();
+	timer::duration fps(microseconds((long int)(1e6 /  60)));
+	while(mUpdaterRunning) {
+		double diff = duration_cast<microseconds>(timer::now().time_since_epoch() - timestamp).count() * 1e-6;
+		timestamp = timer::now().time_since_epoch();
+		update(diff);
+
+		//Only sleep if timediff > 1 milli sec
+		timer::duration sleeptime = fps - (timer::now().time_since_epoch() - timestamp);
+		if(sleeptime > milliseconds(1))
+			std::this_thread::sleep_for(sleeptime);
+	}
+	printf("Updater Stoped\n");
 }
 
 void Gamefield::update(double timediff) {
@@ -72,6 +139,9 @@ void Gamefield::update(double timediff) {
 	}
 
 	//Send updated data
+	sendToAll(std::make_shared<UpdateElementsPacket>(mNewElements, mDeletedElements, mElements));
+	mNewElements.clear();
+	mDeletedElements.clear();
 }
 
 struct CollisionStore {
@@ -170,46 +240,55 @@ ElementPtr Gamefield::createObstracle() {
 	return o;
 }
 
-void Gamefield::onConnection(SocketIO* sender, const v8::FunctionCallbackInfo<v8::Value>& params) {
-	//SocketIO* socket = new SocketIO(params[0]->ToObject());
-	//setCallbacks(socket);
+
+void Gamefield::onConnected(ClientPtr client) {
+	//Set Callbacks
+	client->on(PID_Join, std::bind(&Gamefield::onJoin, this, _1, _2));
+	client->on(PID_Leave, std::bind(&Gamefield::onLeave, this, _1, _2));
+	client->on(PID_Start, std::bind(&Gamefield::onStart, this, _1, _2));
+	client->on(PID_GetStats, std::bind(&Gamefield::onGetStats, this, _1, _2));
+	client->setOnDisconnect(std::bind(&Gamefield::onDisconnected, this, _1));
 }
 
-void Gamefield::onJoin(SocketIO* sender, const v8::FunctionCallbackInfo<v8::Value>& params) {
+void Gamefield::onDisconnected(ClientPtr client) {
+	auto it = mPlayer.find(client->getId());
+	if(it != mPlayer.end()) {
+		for(BallPtr ball : it->second->getBalls())
+			destroyElement(ball);
+		mPlayer.erase(it);
+	}
+	mClients.remove(client);
 
+	if(mClients.empty())
+		mUpdaterRunning = false;
 }
 
-void Gamefield::onLeave(SocketIO* sender, const v8::FunctionCallbackInfo<v8::Value>& params) {
+void Gamefield::onJoin(ClientPtr client, PacketPtr packet) {
+	//Send all elements
+	client->emit(std::make_shared<SetElementsPacket>(mElements));
+	//Add to update queue
+	mClients.push_back(client);
 
+	if(mUpdaterRunning == false)
+		startUpdater();
 }
 
-void Gamefield::onStart(SocketIO* sender, const v8::FunctionCallbackInfo<v8::Value>& params) {
+void Gamefield::onLeave(ClientPtr client, PacketPtr packet) {
+	//Remove from update queue
+	mClients.remove(client);
+
+	if(mClients.empty())
+		mUpdaterRunning = false;
+}
+
+void Gamefield::onStart(ClientPtr client, PacketPtr packet) {
 	//TODO color
-	PlayerPtr ply = std::make_shared<Player>(shared_from_this(), sender->getId(), "some color");
-	mPlayer[sender->getId()] = ply;
+	PlayerPtr ply = std::make_shared<Player>(shared_from_this(), client, "some color", "sone name");
+	mPlayer[client->getId()] = ply;
 	ply->addBall(createBall(ply));
 }
 
-void Gamefield::onDisconnect(SocketIO* sender, const v8::FunctionCallbackInfo<v8::Value>& params) {
-
+void Gamefield::onGetStats(ClientPtr client, PacketPtr packet) {
+	//TODO gather stats
 }
 
-void Gamefield::onGetStats(SocketIO* sender, const v8::FunctionCallbackInfo<v8::Value>& params) {
-
-}
-
-void Gamefield::onSplitUp(SocketIO* sender, const v8::FunctionCallbackInfo<v8::Value>& params) {
-
-}
-
-void Gamefield::onShoot(SocketIO* sender, const v8::FunctionCallbackInfo<v8::Value>& params) {
-
-}
-
-void Gamefield::onUpdateTarget(SocketIO* sender, const v8::FunctionCallbackInfo<v8::Value>& params) {
-
-}
-
-void Gamefield::setCallbacks(SocketIO* socket) {
-
-}

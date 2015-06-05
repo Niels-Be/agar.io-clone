@@ -22,6 +22,7 @@ protected:
 public:
 	MoveableElement(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, const String& mColor, double mSize,
 					uint32_t mass = 0, double speed = 0);
+	virtual ~MoveableElement() {}
 
 	void setDirection(const Vector& direction, bool isMoving = true);
 
@@ -31,9 +32,7 @@ public:
 
 	virtual double getSpeed() const;
 
-	virtual v8::Local<v8::Object> get() const;
-
-	virtual v8::Local<v8::Object> getUpdate() const;
+	virtual ElementUpdateData getUpdate() const;
 
 	virtual void update(double timediff);
 };

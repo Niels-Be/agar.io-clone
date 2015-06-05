@@ -10,7 +10,7 @@
 
 class Shoot : public MoveableElement {
 public:
-	Shoot(GamefieldPtr mGamefield, uint64_t mId, const Vector& mPosition, const String& mColor,
+	Shoot(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, const String& mColor,
 		  const Vector& direction);
 
 	virtual ElementType getType() const { return ET_Shoot; }

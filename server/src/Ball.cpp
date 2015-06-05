@@ -7,11 +7,11 @@
 #include "Shoot.h"
 #include "Player.h"
 
-Ball::Ball(GamefieldPtr mGamefield, uint64_t mId, const Vector& mPosition, PlayerPtr player) :
+Ball::Ball(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, PlayerPtr player) :
 		Ball(mGamefield, mId, mPosition, player, mGamefield->getOptions().player.startMass) {
 }
 
-Ball::Ball(GamefieldPtr mGamefield, uint64_t mId, const Vector& mPosition, PlayerPtr player, int32_t mass) :
+Ball::Ball(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, PlayerPtr player, int32_t mass) :
 		MoveableElement(mGamefield, mId, mPosition, player->getColor(), 1, 1, 1),
 		mPlayer(player) {
 	setMass(mGamefield->getOptions().player.startMass);
@@ -74,4 +74,10 @@ void Ball::update(double timediff) {
 		}
 		mStarveTimer = 0;
 	}
+}
+
+ElementData Ball::get() const {
+	ElementData ed = Element::get();
+	ed.name = mPlayer->getName();
+	return ed;
 }

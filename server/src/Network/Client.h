@@ -16,6 +16,7 @@ private:
 	Server* mServer;
 
 	unordered_map<uint8_t, HandlerFunction> mPacketHandler;
+	std::function<void (ClientPtr)> mOnDisconnectCallback;
 
 public:
 	Client(uint64_t mId, Server* mServer) : mId(mId), mServer(mServer) { }
@@ -25,6 +26,7 @@ public:
 
 	void emit(PacketPtr packet);
 	void on(uint8_t packetId, HandlerFunction func);
+	void setOnDisconnect(std::function<void (ClientPtr)> callback) { mOnDisconnectCallback = callback; }
 
 	void handlePacket(PacketPtr packet);
 	void handleDisconnect();

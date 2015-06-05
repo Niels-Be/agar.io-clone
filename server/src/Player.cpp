@@ -5,12 +5,23 @@
 #include "Player.h"
 #include "Ball.h"
 #include "Gamefield.h"
+#include "Network/Client.h"
+#include "Network/AgarPackets.h"
 
-Player::Player(GamefieldPtr mGamefield, uint32_t mId, const String& mColor) :
-		mId(mId), mGamefield(mGamefield), mColor(mColor) {
+using std::placeholders::_1;
+using std::placeholders::_2;
+
+Player::Player(GamefieldPtr mGamefield, ClientPtr mClient, const String& mColor, const String& mName) :
+		mClient(mClient), mGamefield(mGamefield), mColor(mColor), mName(mName)
+{
+	//Set Callbacks
+	mClient->on(PID_UpdateTarget, std::bind(&Player::onUpdateTarget, this, _1, _2));
+	mClient->on(PID_SplitUp, std::bind(&Player::onSplitUp, this, _1, _2));
+	mClient->on(PID_Shoot, std::bind(&Player::onShoot, this, _1, _2));
 }
 
 void Player::setTarget(const Vector& target) {
+	mTarget = target;
 	for (BallPtr ball : mBalls) {
 		Vector t = target - (ball->getPosition() - mPosition);
 		if (t.lengthSquared() < ball->getSize() * ball->getSize() / 4)
@@ -63,4 +74,17 @@ void Player::update(double /*timediff*/) {
 		size += ball->getSize();
 	}
 	mPosition /= size;
+}
+
+void Player::onSplitUp(ClientPtr client, PacketPtr packet) {
+	splitUp(mTarget);
+}
+
+void Player::onShoot(ClientPtr client, PacketPtr packet) {
+	shoot(mTarget);
+}
+
+void Player::onUpdateTarget(ClientPtr client, PacketPtr packet) {
+	auto p = std::dynamic_pointer_cast<StructPacket<PID_UpdateTarget, TargetPacket> >(packet);
+	setTarget(Vector((*p)->x, (*p)->y));
 }

@@ -9,11 +9,10 @@ bool Element::intersect(ElementPtr other) {
 	return dist <= mSize * mSize || dist <= other->mSize * other->mSize;
 }
 
-v8::Local<v8::Object> Element::get() const {
-	return v8::Local<v8::Object>();
+ElementData Element::get() const {
+	return ElementData {mId, getType(), mColor, ""};
 }
 
-v8::Local<v8::Object> Element::getUpdate() const {
-	if (mSizeHasChanged);
-	return v8::Local<v8::Object>();
+ElementUpdateData Element::getUpdate() const {
+	return ElementUpdateData {mId, mPosition.x, mPosition.y, mSize, 0, 0 };
 }

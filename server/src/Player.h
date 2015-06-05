@@ -10,18 +10,21 @@
 
 class Player {
 private:
-	uint32_t mId;
+	ClientPtr mClient;
 	GamefieldPtr mGamefield;
 	list<BallPtr> mBalls;
 	String mColor;
 	Vector mPosition;
+	Vector mTarget;
+	String mName;
 
 public:
 
 
-	Player(GamefieldPtr mGamefield, uint32_t mId, const String& mColor);
+	Player(GamefieldPtr mGamefield, ClientPtr mClient, const String& mColor, const String& mName);
 
 	String getColor() const { return mColor; }
+	String getName() const { return mName; }
 
 	void setTarget(const Vector& target);
 
@@ -33,8 +36,16 @@ public:
 
 	void removeBall(BallPtr ball);
 
+	list<BallPtr> getBalls() const { return mBalls; }
+
 	void update(double timediff);
 
+private:
+	void onSplitUp(ClientPtr client, PacketPtr packet);
+
+	void onShoot(ClientPtr client, PacketPtr packet);
+
+	void onUpdateTarget(ClientPtr client, PacketPtr packet);
 
 };
 

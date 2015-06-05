@@ -65,14 +65,10 @@ double MoveableElement::getSpeed() const {
 	return (mVelocity + mBoostVelocity).lengthSquared();
 }
 
-v8::Local<v8::Object> MoveableElement::get() const {
-	v8::Local<v8::Object> res = Element::get();
-
-	return res;
+ElementUpdateData MoveableElement::getUpdate() const {
+	ElementUpdateData eud = Element::getUpdate();
+	eud.velX = mVelocity.x + mBoostVelocity.x;
+	eud.velY = mVelocity.y + mBoostVelocity.y;
+	return eud;
 }
 
-v8::Local<v8::Object> MoveableElement::getUpdate() const {
-	v8::Local<v8::Object> res = Element::getUpdate();
-
-	return res;
-}

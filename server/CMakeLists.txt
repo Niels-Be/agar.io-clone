@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.2)
 project(server)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
 set(SOURCE_FILES
     src/Ball.cpp
     src/Ball.h
-    src/Client.cpp
-    src/Client.h
+    src/Network/Client.cpp
+    src/Network/Client.h
     src/Element.cpp
     src/Element.h
     src/Food.cpp
@@ -20,18 +20,16 @@ set(SOURCE_FILES
     src/MoveableElement.h
     src/Obstracle.cpp
     src/Obstracle.h
-    src/Packet.cpp
-    src/Packet.h
-    src/PacketManager.cpp
-    src/PacketManager.h
+    src/Network/Packet.cpp
+    src/Network/Packet.h
+    src/Network/PacketManager.cpp
+    src/Network/PacketManager.h
     src/Player.cpp
     src/Player.h
-    src/Server.cpp
-    src/Server.h
+    src/Network/Server.cpp
+    src/Network/Server.h
     src/Shoot.cpp
     src/Shoot.h
-    src/SocketIO.cpp
-    src/SocketIO.h
     src/Vector.cpp
     src/Vector.h
     CMakeLists.txt)
@@ -41,7 +39,8 @@ include_directories("/home/niels/.node-gyp/0.12.2/deps/v8/include/")
 include_directories("/home/niels/.node-gyp/0.12.2/deps/uv/include/")
 include_directories("/home/niels/.node-gyp/0.12.2/src/")
 
-add_executable(server ${SOURCE_FILES})
+add_executable(server ${SOURCE_FILES} src/Network/AgarPackets.cpp src/Network/AgarPackets.h)
 
 find_package(Boost COMPONENTS system REQUIRED)
 target_link_libraries(server ${Boost_LIBRARIES})
+target_link_libraries(server pthread)

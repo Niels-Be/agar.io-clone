@@ -46,8 +46,10 @@ private:
 
 
 Server::ServerImpl::ServerImpl(Server* base) : mBase(base) {
-	server.set_access_channels(websocketpp::log::alevel::all);
-	server.clear_access_channels(websocketpp::log::alevel::frame_payload);
+	server.clear_access_channels(websocketpp::log::alevel::all);
+	server.set_access_channels(websocketpp::log::alevel::connect);
+	server.set_access_channels(websocketpp::log::alevel::disconnect);
+	server.set_access_channels(websocketpp::log::alevel::fail);
 
 	// Initialize ASIO
 	server.init_asio();
@@ -107,8 +109,8 @@ void Server::ServerImpl::onClose(connection_hdl hdl) {
 
 connection_hdl Server::ServerImpl::toHdl(uint64_t id) {
 	//TODO this will end in memory leaks
-	WebSocket::connection_ptr con((WebSocket::connection_type*)id);
-	return connection_hdl(con);
+	WebSocket::connection_type* con = (WebSocket::connection_type*)id;
+	return connection_hdl(con->shared_from_this());
 }
 
 uint64_t Server::ServerImpl::toClientId(connection_hdl id) {

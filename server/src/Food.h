@@ -11,7 +11,7 @@
 class Food : public Element {
 
 public:
-	Food(GamefieldPtr mGamefield, uint64_t mId, const Vector& mPosition);
+	Food(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition);
 
 	virtual ElementType getType() const { return ET_Food; }
 };

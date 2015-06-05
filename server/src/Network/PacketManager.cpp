@@ -14,7 +14,7 @@ PacketPtr PacketManager::create(uint8_t id) {
 	return mPackets[id]->create();
 }
 
-void PacketManager::registerPacket(uint8_t id, std::unique_ptr<PacketManager::Factory> factory) {
+void PacketManager::registerPacket(uint8_t id, PacketManager::Factory* factory) {
 	assert(mPackets.find(id) == mPackets.end());
-	mPackets[id] = std::move(factory);
+	mPackets[id].reset(factory);
 }

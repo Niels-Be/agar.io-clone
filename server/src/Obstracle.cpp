@@ -6,7 +6,7 @@
 #include "Gamefield.h"
 #include "Ball.h"
 
-Obstracle::Obstracle(GamefieldPtr mGamefield, uint64_t mId, const Vector& mPosition) :
+Obstracle::Obstracle(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition) :
 		Element(mGamefield, mId, mPosition, mGamefield->getOptions().obstracle.color,
 				mGamefield->getOptions().obstracle.size) {
 }

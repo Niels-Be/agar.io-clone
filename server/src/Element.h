@@ -15,6 +15,30 @@ enum ElementType : int8_t {
 	ET_Obstracle
 };
 
+enum ElementEntryID : int8_t {
+	EEID_type,
+	EEID_color,
+	EEID_name,
+	EEID_pos,
+	EEID_size,
+	EEID_vel,
+};
+
+struct ElementData {
+	uint32_t id;
+	ElementType type;
+	String color;
+	String name;
+};
+
+struct ElementUpdateData {
+	uint32_t id;
+	double x;
+	double y;
+	double size;
+	double velX;
+	double velY;
+};
 
 class Element {
 	friend class Gamefield;
@@ -36,6 +60,7 @@ public:
 	Element(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, const String& mColor, double mSize,
 			uint32_t mMass = 0) :
 			mGamefield(mGamefield), mId(mId), mPosition(mPosition), mColor(mColor), mSize(mSize), mMass(mMass) { }
+	virtual ~Element() {}
 
 
 	uint32_t getId() const { return mId; }
@@ -53,7 +78,7 @@ public:
 
 	void addMass(int32_t mass) { setMass(mMass + mass); }
 
-	int32_t getMass() const { return mMass; }
+	uint32_t getMass() const { return mMass; }
 
 	const Vector& getPosition() const { return mPosition; }
 
@@ -65,9 +90,9 @@ public:
 
 	virtual ElementType getType() const = 0;
 
-	virtual v8::Local<v8::Object> get() const;
+	virtual ElementData get() const;
 
-	virtual v8::Local<v8::Object> getUpdate() const;
+	virtual ElementUpdateData getUpdate() const;
 
 	void changed() { mHasChanged = true; }
 
