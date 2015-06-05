@@ -17,7 +17,7 @@ class Network
 		RIP: 0x23
 		0x23: Packet.bind(undefined, 0x23)
 		PlayerUpdate: 0x24
-		0x24: Packet.bind(undefined, 0x24)
+		0x24: PlayerUpdatePacket
 
 		SetElements: 0x30
 		0x30: SetElementsPacket

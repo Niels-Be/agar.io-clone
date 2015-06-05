@@ -67,13 +67,14 @@ class Game
 		y: 0
 		size: 0
 		mass: 0
-		balls: []
+		balls: {}
 
 	elements: {}	
 
 	target:
 		x: 0
 		y: 0
+		changed: false
 
 	fps: 0
 	fpstimer: 0
@@ -119,6 +120,7 @@ class Game
 			@updatePlayer()
 
 		@net.on Network.Packets.Start, =>
+			console.log("Game Started")
 			@gameStarted = true
 
 		@net.on Network.Packets.SetElements, (packet) =>
@@ -130,24 +132,33 @@ class Game
 		@net.on Network.Packets.UpdateElements, (packet) =>
 			for o in packet.newElements
 				@elements[o.id] = new Ball(@options[Game.ElementTypes[o.type]], o)
-				if(o.type == 0)
-					console.log(o)
+				if(o.type == 0 && @player.balls.hasOwnProperty(o.id))
+					@elements[o.id].options = @options.player
+					@player.balls[o.id] = @elements[o.id]
+					console.log("PlayerBall", @elements[o.id])
 			for o in packet.deletedElements
 				delete @elements[o]
 			for o in packet.updateElements
 				@elements[o.id].updateData(o)
+			#console.log("Update", @elements[o.id].x, @elements[o.id].y)
 
 
 		@net.on Network.Packets.PlayerUpdate, (packet) =>
 			@player.mass = packet.mass
-			@player.balls = packet.balls
-
+			@player.balls = {}
+			for b in packet.balls
+				if @elements.hasOwnProperty(b)
+					@player.balls[b] = @elements[b]
+					@elements[b].options = @options.player
+					console.log("PlayerBall", @elements[b])
+				else
+					@player.balls[b] = null
+			console.log(@player, packet)
 			@massText.innerHTML = "Mass: "+@player.mass
-			for b in @player.balls when @elements.hasOwnProperty(b)
-				@elements[b].options = @options.player
 			@updatePlayer()
 
 		@net.on Network.Packets.RIP, =>
+			console.log("You got killed")
 			@gameStarted = false
 			spawnbox.hidden = false
 			#@lobbySocket.emit "getRooms"
@@ -171,6 +182,7 @@ class Game
 		@canvas.addEventListener "mousemove", (evt) =>
 			@target.x = evt.clientX - @screen.width  / 2;
 			@target.y = evt.clientY - @screen.height / 2;
+			@target.changed = true
 		@canvas.addEventListener "keypress", (evt) =>
 			#console.log("Key:", evt.keyCode, evt.charCode)
 			@net.emit Network.Packets.SplitUp if evt.charCode == 32
@@ -240,6 +252,8 @@ class Game
 			if @inRoom
 				@update timediff * 1e-3
 				@render()
+			else
+				@statusText.innerHTML = "FPS: -"
 			@lastTick = now
 			@loop()
 
@@ -249,11 +263,13 @@ class Game
 			m.update timediff
 		if @gameStarted
 			@updatePlayer()
-			@net.emit new TargetPacket(@target.x, @target.y)
+			if @target.changed
+				@net.emit new TargetPacket(@target.x, @target.y)
+				@target.changed = false
 
 		@fpstimer += timediff
 		@fps++
-		if @fpstimer > 1
+		if @fpstimer >= 1
 			@statusText.innerHTML = "FPS:" + @fps
 			@fps = 0
 			@fpstimer = 0
@@ -263,14 +279,16 @@ class Game
 		if @gameStarted
 			#center the camera in the middle of all balls
 			@player.x = @player.y = @player.size = 0
-			for b in @player.balls when @elements.hasOwnProperty(b)
-				@player.size += @elements[b].size
-			for b in @player.balls when @elements.hasOwnProperty(b)
-				@player.x += @elements[b].x * @elements[b].size
-				@player.y += @elements[b].y * @elements[b].size
-			@player.x /= @player.size 
-			@player.y /= @player.size 
-			@player.size /= @player.balls.length
+			i = 0
+			for j,b of @player.balls when b != null
+				@player.x += b.x * b.size
+				@player.y += b.y * b.size
+				@player.size += b.size
+				i++
+			if(i > 0)
+				@player.x /= @player.size 
+				@player.y /= @player.size 
+				@player.size /= i
 
 		else #show the entiere map
 			@player.x = @gamefield.width / 2

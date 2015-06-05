@@ -7,9 +7,10 @@ class Ball
 		extend @, data
 
 	update: (t) ->
-		if @velocity
-			@x += @velocity.x * t
-			@y += @velocity.y * t
+		if @velX
+			@x += @velX * t
+		if @velY
+			@y += @velY * t
 
 	render: (graph) ->
 		graph.beginPath();

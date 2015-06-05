@@ -24,7 +24,7 @@ void MoveableElement::update(double timediff) {
 		changed();
 	}
 
-	//a = mGamefield->getOptions().player.force / (mMass + 1)
+	//double a = mGamefield->getOptions().player.force / (mMass + 1)
 	double a = mGamefield->getOptions().player.acceleration; //constant acceleration independent of mass
 
 	if (mIsMoving) {
@@ -32,6 +32,7 @@ void MoveableElement::update(double timediff) {
 
 		mVelocity.x = abs(vel.x) > abs(mMaxSpeed * mDirection.x) ? mMaxSpeed * mDirection.x : vel.x;
 		mVelocity.y = abs(vel.y) > abs(mMaxSpeed * mDirection.y) ? mMaxSpeed * mDirection.y : vel.y;
+		//printf("%lf, %lf  %lf\n", mVelocity.x, mVelocity.y, timediff);
 		changed();
 	} else if (mVelocity.x != 0 || mVelocity.y != 0) {
 		double velX = mVelocity.x - a * timediff * sign(mVelocity.x);
@@ -53,7 +54,7 @@ void MoveableElement::update(double timediff) {
 
 void MoveableElement::setDirection(const Vector& direction, bool isMoving) {
 	mIsMoving = isMoving;
-	mDirection = direction.normaliseCopy();
+	mDirection = direction;
 }
 
 void MoveableElement::setBoost(const Vector& velocity, double acceleration) {

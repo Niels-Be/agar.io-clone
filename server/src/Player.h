@@ -8,7 +8,7 @@
 #include "GlobalDefs.h"
 #include "Vector.h"
 
-class Player {
+class Player : public std::enable_shared_from_this<Player> {
 private:
 	ClientPtr mClient;
 	GamefieldPtr mGamefield;
@@ -37,6 +37,8 @@ public:
 	void removeBall(BallPtr ball);
 
 	list<BallPtr> getBalls() const { return mBalls; }
+
+	void updateClient();
 
 	void update(double timediff);
 

@@ -38,6 +38,7 @@ void Player::splitUp(const Vector& target) {
 			ball->splitUp(Vector::FromAngle(t.angle()));
 		}
 	}
+	updateClient();
 }
 
 void Player::shoot(const Vector& target) {
@@ -47,6 +48,7 @@ void Player::shoot(const Vector& target) {
 			ball->shoot(Vector::FromAngle(t.angle()));
 		}
 	}
+	updateClient();
 }
 
 void Player::addBall(BallPtr ball) {
@@ -87,4 +89,8 @@ void Player::onShoot(ClientPtr client, PacketPtr packet) {
 void Player::onUpdateTarget(ClientPtr client, PacketPtr packet) {
 	auto p = std::dynamic_pointer_cast<StructPacket<PID_UpdateTarget, TargetPacket> >(packet);
 	setTarget(Vector((*p)->x, (*p)->y));
+}
+
+void Player::updateClient() {
+	mClient->emit(std::make_shared<PlayerUpdatePacket>(shared_from_this()));
 }

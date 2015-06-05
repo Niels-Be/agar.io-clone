@@ -24,7 +24,7 @@ struct Options {
 		double defaultSize = 15;
 		double startMass = 20;
 		double targetForce = 50; // unused
-		double acceleration = 0.005;
+		double acceleration = 5000;
 		double maxSpeed = 300;
 		double speedPenalty = 0.005;
 		double eatFactor = 1.2;
@@ -60,7 +60,7 @@ private:
 	ServerPtr mServer;
 	Options mOptions;
 	vector<ElementPtr> mElements;
-	uint32_t mElementIds = 0;
+	volatile uint32_t mElementIds = 0;
 	unordered_map<uint64_t, PlayerPtr> mPlayer;
 	list<ClientPtr> mClients;
 
@@ -73,7 +73,7 @@ private:
 	double mObstracleSpawnTimer = 0;
 	uint32_t mObstracleCounter = 0;
 
-	bool mUpdaterRunning = false;
+	volatile bool mUpdaterRunning = false;
 	std::thread mUpdaterThread;
 
 	FPSControl mFPSControl;

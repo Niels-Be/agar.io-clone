@@ -13,12 +13,12 @@
   };
 
   stringToUint = function(string) {
-    var c, charList, j, len, uintArray;
+    var c, charList, k, len, uintArray;
     string = unescape(encodeURIComponent(string));
     charList = string.split('');
     uintArray = [];
-    for (j = 0, len = charList.length; j < len; j++) {
-      c = charList[j];
+    for (k = 0, len = charList.length; k < len; k++) {
+      c = charList[k];
       uintArray.push(c.charCodeAt(0));
     }
     return uintArray;
@@ -155,19 +155,19 @@
     }
 
     UpdateElementsPacket.prototype.parseData = function(data) {
-      var count, e, j, k, pos, ref, ref1, ref2, ref3, results;
+      var count, e, k, l, pos, ref, ref1, ref2, ref3, results;
       this.newElements = [];
       this.deletedElements = [];
       this.updateElements = [];
       count = data.getUint16(1, true);
       pos = 3;
-      for (j = 0, ref = count; 0 <= ref ? j < ref : j > ref; 0 <= ref ? j++ : j--) {
+      for (k = 0, ref = count; 0 <= ref ? k < ref : k > ref; 0 <= ref ? k++ : k--) {
         ref1 = Network.parseElementData(data, pos), pos = ref1[0], e = ref1[1];
         this.newElements.push(e);
       }
       count = data.getUint16(pos, true);
       pos += 2;
-      for (k = 0, ref2 = count; 0 <= ref2 ? k < ref2 : k > ref2; 0 <= ref2 ? k++ : k--) {
+      for (l = 0, ref2 = count; 0 <= ref2 ? l < ref2 : l > ref2; 0 <= ref2 ? l++ : l--) {
         this.deletedElements.push(data.getUint32(pos, true));
         pos += 4;
       }
@@ -217,7 +217,7 @@
       RIP: 0x23,
       0x23: Packet.bind(void 0, 0x23),
       PlayerUpdate: 0x24,
-      0x24: Packet.bind(void 0, 0x24),
+      0x24: PlayerUpdatePacket,
       SetElements: 0x30,
       0x30: SetElementsPacket,
       UpdateElements: 0x31,
@@ -350,9 +350,11 @@
     };
 
     Ball.prototype.update = function(t) {
-      if (this.velocity) {
-        this.x += this.velocity.x * t;
-        return this.y += this.velocity.y * t;
+      if (this.velX) {
+        this.x += this.velX * t;
+      }
+      if (this.velY) {
+        return this.y += this.velY * t;
       }
     };
 
@@ -389,15 +391,15 @@
     }
 
     Grid.prototype.render = function(graph) {
-      var j, k, ref, ref1, ref2, ref3, x, y;
+      var k, l, ref, ref1, ref2, ref3, x, y;
       graph.beginPath();
       graph.lineWidth = 1;
       graph.strokeStyle = this.options.lineColor;
-      for (x = j = 0, ref = this.game.gamefield.width, ref1 = this.options.size; ref1 > 0 ? j <= ref : j >= ref; x = j += ref1) {
+      for (x = k = 0, ref = this.game.gamefield.width, ref1 = this.options.size; ref1 > 0 ? k <= ref : k >= ref; x = k += ref1) {
         graph.moveTo(x, 0);
         graph.lineTo(x, this.game.gamefield.height);
       }
-      for (y = k = 0, ref2 = this.game.gamefield.height, ref3 = this.options.size; ref3 > 0 ? k <= ref2 : k >= ref2; y = k += ref3) {
+      for (y = l = 0, ref2 = this.game.gamefield.height, ref3 = this.options.size; ref3 > 0 ? l <= ref2 : l >= ref2; y = l += ref3) {
         graph.moveTo(0, y);
         graph.lineTo(this.game.gamefield.width, y);
       }
@@ -526,14 +528,15 @@
       y: 0,
       size: 0,
       mass: 0,
-      balls: []
+      balls: {}
     };
 
     Game.prototype.elements = {};
 
     Game.prototype.target = {
       x: 0,
-      y: 0
+      y: 0,
+      changed: false
     };
 
     Game.prototype.fps = 0;
@@ -584,17 +587,18 @@
       })(this));
       this.net.on(Network.Packets.Start, (function(_this) {
         return function() {
+          console.log("Game Started");
           return _this.gameStarted = true;
         };
       })(this));
       this.net.on(Network.Packets.SetElements, (function(_this) {
         return function(packet) {
-          var j, len, o, ref, results;
+          var k, len, o, ref, results;
           _this.elements = {};
           ref = packet.elements;
           results = [];
-          for (j = 0, len = ref.length; j < len; j++) {
-            o = ref[j];
+          for (k = 0, len = ref.length; k < len; k++) {
+            o = ref[k];
             results.push(_this.elements[o.id] = new Ball(_this.options[Game.ElementTypes[o.type]], o));
           }
           return results;
@@ -602,24 +606,26 @@
       })(this));
       this.net.on(Network.Packets.UpdateElements, (function(_this) {
         return function(packet) {
-          var j, k, l, len, len1, len2, o, ref, ref1, ref2, results;
+          var k, l, len, len1, len2, n, o, ref, ref1, ref2, results;
           ref = packet.newElements;
-          for (j = 0, len = ref.length; j < len; j++) {
-            o = ref[j];
+          for (k = 0, len = ref.length; k < len; k++) {
+            o = ref[k];
             _this.elements[o.id] = new Ball(_this.options[Game.ElementTypes[o.type]], o);
-            if (o.type === 0) {
-              console.log(o);
+            if (o.type === 0 && _this.player.balls.hasOwnProperty(o.id)) {
+              _this.elements[o.id].options = _this.options.player;
+              _this.player.balls[o.id] = _this.elements[o.id];
+              console.log("PlayerBall", _this.elements[o.id]);
             }
           }
           ref1 = packet.deletedElements;
-          for (k = 0, len1 = ref1.length; k < len1; k++) {
-            o = ref1[k];
+          for (l = 0, len1 = ref1.length; l < len1; l++) {
+            o = ref1[l];
             delete _this.elements[o];
           }
           ref2 = packet.updateElements;
           results = [];
-          for (l = 0, len2 = ref2.length; l < len2; l++) {
-            o = ref2[l];
+          for (n = 0, len2 = ref2.length; n < len2; n++) {
+            o = ref2[n];
             results.push(_this.elements[o.id].updateData(o));
           }
           return results;
@@ -627,22 +633,28 @@
       })(this));
       this.net.on(Network.Packets.PlayerUpdate, (function(_this) {
         return function(packet) {
-          var b, j, len, ref;
+          var b, k, len, ref;
           _this.player.mass = packet.mass;
-          _this.player.balls = packet.balls;
-          _this.massText.innerHTML = "Mass: " + _this.player.mass;
-          ref = _this.player.balls;
-          for (j = 0, len = ref.length; j < len; j++) {
-            b = ref[j];
+          _this.player.balls = {};
+          ref = packet.balls;
+          for (k = 0, len = ref.length; k < len; k++) {
+            b = ref[k];
             if (_this.elements.hasOwnProperty(b)) {
+              _this.player.balls[b] = _this.elements[b];
               _this.elements[b].options = _this.options.player;
+              console.log("PlayerBall", _this.elements[b]);
+            } else {
+              _this.player.balls[b] = null;
             }
           }
+          console.log(_this.player, packet);
+          _this.massText.innerHTML = "Mass: " + _this.player.mass;
           return _this.updatePlayer();
         };
       })(this));
       this.net.on(Network.Packets.RIP, (function(_this) {
         return function() {
+          console.log("You got killed");
           _this.gameStarted = false;
           return spawnbox.hidden = false;
         };
@@ -666,12 +678,12 @@
       this.canvas.addEventListener("mousemove", (function(_this) {
         return function(evt) {
           _this.target.x = evt.clientX - _this.screen.width / 2;
-          return _this.target.y = evt.clientY - _this.screen.height / 2;
+          _this.target.y = evt.clientY - _this.screen.height / 2;
+          return _this.target.changed = true;
         };
       })(this));
       this.canvas.addEventListener("keypress", (function(_this) {
         return function(evt) {
-          console.log("Key:", evt.keyCode, evt.charCode);
           if (evt.charCode === 32) {
             _this.net.emit(Network.Packets.SplitUp);
           }
@@ -747,6 +759,8 @@
           if (_this.inRoom) {
             _this.update(timediff * 1e-3);
             _this.render();
+          } else {
+            _this.statusText.innerHTML = "FPS: -";
           }
           _this.lastTick = now;
           return _this.loop();
@@ -763,11 +777,14 @@
       }
       if (this.gameStarted) {
         this.updatePlayer();
-        this.net.emit(new TargetPacket(this.target.x, this.target.y));
+        if (this.target.changed) {
+          this.net.emit(new TargetPacket(this.target.x, this.target.y));
+          this.target.changed = false;
+        }
       }
       this.fpstimer += timediff;
       this.fps++;
-      if (this.fpstimer > 1) {
+      if (this.fpstimer >= 1) {
         this.statusText.innerHTML = "FPS:" + this.fps;
         this.fps = 0;
         return this.fpstimer = 0;
@@ -775,28 +792,26 @@
     };
 
     Game.prototype.updatePlayer = function() {
-      var b, j, k, len, len1, ref, ref1;
+      var b, i, j, ref;
       if (this.gameStarted) {
         this.player.x = this.player.y = this.player.size = 0;
+        i = 0;
         ref = this.player.balls;
-        for (j = 0, len = ref.length; j < len; j++) {
+        for (j in ref) {
           b = ref[j];
-          if (this.elements.hasOwnProperty(b)) {
-            this.player.size += this.elements[b].size;
-          }
-        }
-        ref1 = this.player.balls;
-        for (k = 0, len1 = ref1.length; k < len1; k++) {
-          b = ref1[k];
-          if (!(this.elements.hasOwnProperty(b))) {
+          if (!(b !== null)) {
             continue;
           }
-          this.player.x += this.elements[b].x * this.elements[b].size;
-          this.player.y += this.elements[b].y * this.elements[b].size;
+          this.player.x += b.x * b.size;
+          this.player.y += b.y * b.size;
+          this.player.size += b.size;
+          i++;
         }
-        this.player.x /= this.player.size;
-        this.player.y /= this.player.size;
-        return this.player.size /= this.player.balls.length;
+        if (i > 0) {
+          this.player.x /= this.player.size;
+          this.player.y /= this.player.size;
+          return this.player.size /= i;
+        }
       } else {
         this.player.x = this.gamefield.width / 2;
         this.player.y = this.gamefield.height / 2;

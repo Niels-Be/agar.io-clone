@@ -21,8 +21,6 @@ using std::placeholders::_2;
 Gamefield::Gamefield(ServerPtr server) : mServer(server) {
 	mServer->setOnConnected(std::bind(&Gamefield::onConnected, this, _1));
 
-	//for(uint i = 0; i < mOptions.food.max/2; i++)
-	//	createFood();
 }
 
 
@@ -89,6 +87,9 @@ void Gamefield::startUpdater() {
 		mUpdaterThread.join();
 		printf(" Done\n");
 	}
+	for(uint i = 0; i < mOptions.food.max/2; i++)
+		createFood();
+
 	printf("Creating new thread\n");
 	mUpdaterThread = (std::thread(std::bind(&Gamefield::updateLoop, this)));
 }
@@ -98,11 +99,11 @@ void Gamefield::updateLoop() {
 	using timer=std::chrono::high_resolution_clock;
 
 	mUpdaterRunning = true;
-	printf("Updater started\n");
+	timer::duration fps(microseconds((uint64_t)(1e6 /  60)));
 
+	printf("Updater started %lf\n",  duration_cast<duration<double, std::milli> >(fps).count());
 
 	timer::duration timestamp = timer::now().time_since_epoch();
-	timer::duration fps(microseconds((long int)(1e6 /  60)));
 	while(mUpdaterRunning) {
 		double diff = duration_cast<microseconds>(timer::now().time_since_epoch() - timestamp).count() * 1e-6;
 		timestamp = timer::now().time_since_epoch();
@@ -112,6 +113,8 @@ void Gamefield::updateLoop() {
 		timer::duration sleeptime = fps - (timer::now().time_since_epoch() - timestamp);
 		if(sleeptime > milliseconds(1))
 			std::this_thread::sleep_for(sleeptime);
+		else
+			printf("I am to slow !!!! %lf\n", duration_cast<duration<double, std::milli> >(sleeptime).count());
 	}
 	printf("Updater Stoped\n");
 }
@@ -122,8 +125,13 @@ void Gamefield::update(double timediff) {
 
 	timer::duration timerStart = timer::now().time_since_epoch();
 
-	for (ElementPtr e : mElements)
+	vector<ElementPtr> changed;
+	changed.reserve(mElements.size());
+	for (ElementPtr e : mElements) {
 		e->update(timediff);
+		if (e->hasChanged())
+			changed.push_back(e);
+	}
 
 	timer::duration timerUpdate = timer::now().time_since_epoch() - timerStart;
 
@@ -148,13 +156,10 @@ void Gamefield::update(double timediff) {
 	}
 
 	//Send updated data
-	vector<ElementPtr> changed;
-	changed.reserve(mElements.size());
-	for(ElementPtr e : mElements)
-		if(e->hasChanged())
-			changed.push_back(e);
-	if(mNewElements.size() + mDeletedElements.size() + changed.size() > 0)
+	if(mNewElements.size() + mDeletedElements.size() + changed.size() > 0) {
 		sendToAll(std::make_shared<UpdateElementsPacket>(mNewElements, mDeletedElements, changed));
+		//printf("Sending Update %ld\n", mElements.size());
+	}
 	mNewElements.clear();
 	mDeletedElements.clear();
 
@@ -229,10 +234,10 @@ void Gamefield::checkCollisions(double timediff) {
 	//Check collisions
 	for (size_t i = 0; i < mElements.size(); i++) {
 		ElementPtr e1 = mElements[i];
-		if(e1->getType() == ET_Food) continue;
 		//Start at i because we already checked elements before
 		for (size_t j = i; j < mElements.size(); j++) {
 			ElementPtr e2 = mElements[j];
+			if(e2->getType() == ET_Food) continue;
 			if (e1->getId() == e2->getId() || e2->isDeleted() || e1->isDeleted())
 				continue;
 			if (e1->intersect(e2)) {
@@ -311,9 +316,12 @@ void Gamefield::onLeave(ClientPtr client, PacketPtr packet) {
 void Gamefield::onStart(ClientPtr client, PacketPtr packet) {
 	auto p = std::dynamic_pointer_cast<StartPacket >(packet);
 	//TODO color
-	PlayerPtr ply = std::make_shared<Player>(shared_from_this(), client, "some color", p->Name);
+	printf("Player %s joind the game\n", p->Name.c_str());
+	PlayerPtr ply = std::make_shared<Player>(shared_from_this(), client, "#FF0000", p->Name);
 	mPlayer[client->getId()] = ply;
 	ply->addBall(createBall(ply));
+	ply->updateClient();
+	client->emit(std::make_shared<EmptyPacket<PID_Start> >());
 }
 
 void Gamefield::onGetStats(ClientPtr client, PacketPtr packet) {
