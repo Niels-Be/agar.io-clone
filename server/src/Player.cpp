@@ -32,7 +32,8 @@ void Player::setTarget(const Vector& target) {
 }
 
 void Player::splitUp(const Vector& target) {
-	for (BallPtr ball : mBalls) {
+	list<BallPtr> balls = mBalls; //Store list here because new balls will be added
+	for (BallPtr ball : balls) {
 		if (ball->getMass() > mGamefield->getOptions().player.minSplitMass) {
 			Vector t = target - (ball->getPosition() - mPosition);
 			ball->splitUp(Vector::FromAngle(t.angle()));
@@ -55,15 +56,15 @@ void Player::addBall(BallPtr ball) {
 	mBalls.push_back(ball);
 }
 
-void Player::removeBall(BallPtr ball) {
+void Player::removeBall(uint32_t ball) {
 	for (auto it = mBalls.begin(); it != mBalls.end(); it++) {
-		if ((*it)->getId() == ball->getId()) {
+		if ((*it)->getId() == ball) {
 			mBalls.erase(it);
 			break;
 		}
 	}
 	if (mBalls.empty()) {
-		//Send RIP
+		mClient->emit(std::make_shared<EmptyPacket<PID_RIP> >());
 	}
 }
 

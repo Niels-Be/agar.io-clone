@@ -8,6 +8,7 @@
 #include <thread>
 #include "GlobalDefs.h"
 #include "Vector.h"
+#include "Element.h"
 
 
 struct Options {
@@ -86,9 +87,7 @@ public:
 
 	ShootPtr createShoot(const Vector& pos, const String& color, const Vector& direction);
 
-	void destroyElement(Element* elem);
-
-	void destroyElement(ElementPtr elem) { destroyElement(elem.get()); }
+	void destroyElement(ElementPtr elem);
 
 	void sendToAll(PacketPtr packet);
 
@@ -96,6 +95,7 @@ public:
 
 private:
 	Vector generatePos();
+	void _destroyElement(ElementPtr elem);
 
 	void startUpdater();
 	void updateLoop();

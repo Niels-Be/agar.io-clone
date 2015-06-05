@@ -44,28 +44,18 @@ ShootPtr Gamefield::createShoot(const Vector& pos, const String& color, const Ve
 	return s;
 }
 
-void Gamefield::destroyElement(Element* elem) {
+void Gamefield::destroyElement(ElementPtr elem) {
 	elem->mDeleted = true;
+	mDeletedElements.push_back(elem);
 
-	//Find element
-	auto it = mElements.begin();
-	while (it != mElements.end())
-		if ((*it)->getId() == elem->getId())
-			break;
-	if (it != mElements.end()) {
-		mDeletedElements.push_back(*it);
-		//Swap with last element then pop last (no realocation needed)
-		(*it) = std::move(mElements.back());
-		mElements.pop_back();
-		if (elem->getType() == ET_Ball) {
-			auto ball = std::dynamic_pointer_cast<Ball>(*it);
-			ball->getPlayer()->removeBall(ball);
-		}
-		if (elem->getType() == ET_Food)
-			mFoodCounter--;
-		if (elem->getType() == ET_Obstracle)
-			mObstracleCounter--;
+	if (elem->getType() == ET_Ball) {
+		auto ball = std::dynamic_pointer_cast<Ball>(elem);
+		ball->getPlayer()->removeBall(ball->getId());
 	}
+	if (elem->getType() == ET_Food)
+		mFoodCounter--;
+	if (elem->getType() == ET_Obstracle)
+		mObstracleCounter--;
 }
 
 
@@ -78,6 +68,21 @@ Vector Gamefield::generatePos() {
 	return Vector((rand() / (double) RAND_MAX) * mOptions.width, (rand() / (double) RAND_MAX) * mOptions.height);
 }
 
+
+void Gamefield::_destroyElement(ElementPtr elem) {
+	//Find element
+	auto it = mElements.begin();
+	while (it != mElements.end()) {
+		if ((*it)->getId() == elem->getId())
+			break;
+		it++;
+	}
+	if (it != mElements.end()) {
+		//Swap with last element then pop last (no realocation needed)
+		(*it) = mElements.back();
+		mElements.pop_back();
+	}
+}
 
 void Gamefield::startUpdater() {
 	printf("Starting Updater\n");
@@ -103,11 +108,19 @@ void Gamefield::updateLoop() {
 
 	printf("Updater started %lf\n",  duration_cast<duration<double, std::milli> >(fps).count());
 
+	double timerFPS = 0;
+
 	timer::duration timestamp = timer::now().time_since_epoch();
 	while(mUpdaterRunning) {
 		double diff = duration_cast<microseconds>(timer::now().time_since_epoch() - timestamp).count() * 1e-6;
 		timestamp = timer::now().time_since_epoch();
 		update(diff);
+
+		timerFPS+=diff;
+		if(timerFPS > 1) {
+			onGetStats(ClientPtr(), PacketPtr());
+			timerFPS = 0;
+		}
 
 		//Only sleep if timediff > 1 milli sec
 		timer::duration sleeptime = fps - (timer::now().time_since_epoch() - timestamp);
@@ -160,6 +173,9 @@ void Gamefield::update(double timediff) {
 		sendToAll(std::make_shared<UpdateElementsPacket>(mNewElements, mDeletedElements, changed));
 		//printf("Sending Update %ld\n", mElements.size());
 	}
+
+	for(ElementPtr elem : mDeletedElements)
+		_destroyElement(elem);
 	mNewElements.clear();
 	mDeletedElements.clear();
 
@@ -234,10 +250,10 @@ void Gamefield::checkCollisions(double timediff) {
 	//Check collisions
 	for (size_t i = 0; i < mElements.size(); i++) {
 		ElementPtr e1 = mElements[i];
+		if(e1->getType() == ET_Food) continue;
 		//Start at i because we already checked elements before
-		for (size_t j = i; j < mElements.size(); j++) {
+		for (size_t j = 0; j < mElements.size(); j++) {
 			ElementPtr e2 = mElements[j];
-			if(e2->getType() == ET_Food) continue;
 			if (e1->getId() == e2->getId() || e2->isDeleted() || e1->isDeleted())
 				continue;
 			if (e1->intersect(e2)) {
@@ -335,7 +351,8 @@ void Gamefield::onGetStats(ClientPtr client, PacketPtr packet) {
 	for(auto it : mFPSControl.timerOther)
 		timerOther += std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(it).count() / mFPSControl.timerOther.size();
 
-	printf("Timings: Update: %lf Collision: %lf Other: %lf\n", timerUpdate, timerCollision, timerOther);
-	client->emit(std::make_shared<StructPacket<PID_GetStats, StatsPacket> >(timerUpdate, timerCollision, timerOther));
+	printf("Timings: Update: %lf Collision: %lf Other: %lf Elements: %ld\n", timerUpdate, timerCollision, timerOther, mElements.size());
+	if(client)
+		client->emit(std::make_shared<StructPacket<PID_GetStats, StatsPacket> >(timerUpdate, timerCollision, timerOther));
 }
 

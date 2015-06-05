@@ -43,7 +43,7 @@ struct ElementUpdateData {
 	double velY;
 };
 
-class Element {
+class Element : public std::enable_shared_from_this<Element> {
 	friend class Gamefield;
 
 protected:

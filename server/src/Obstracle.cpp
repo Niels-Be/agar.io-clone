@@ -24,7 +24,7 @@ bool Obstracle::tryEat(ElementPtr other) {
 			b->setMass(newmass);
 		}
 		mGamefield->destroyElement(ball);
-		mGamefield->destroyElement(this);
+		mGamefield->destroyElement(shared_from_this());
 		return true;
 	} else if (other->getType() == ET_Shoot) {
 		mEatCount++;

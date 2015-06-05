@@ -56,6 +56,7 @@ bool Ball::tryEat(ElementPtr other) {
 	if (other->getMass() > 0 && other->getSize() * mGamefield->getOptions().player.eatFactor < mSize) {
 		addMass(other->getMass());
 		mGamefield->destroyElement(other);
+		mPlayer->updateClient();
 		return true;
 	}
 	return false;

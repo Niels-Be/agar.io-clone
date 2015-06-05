@@ -140,7 +140,7 @@ class Game
 				delete @elements[o]
 			for o in packet.updateElements
 				@elements[o.id].updateData(o)
-			#console.log("Update", @elements[o.id].x, @elements[o.id].y)
+				#console.log("Update", @elements[o.id].x, @elements[o.id].y)
 
 
 		@net.on Network.Packets.PlayerUpdate, (packet) =>

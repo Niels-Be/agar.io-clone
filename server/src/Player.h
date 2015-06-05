@@ -34,7 +34,7 @@ public:
 
 	void addBall(BallPtr ball);
 
-	void removeBall(BallPtr ball);
+	void removeBall(uint32_t ball);
 
 	list<BallPtr> getBalls() const { return mBalls; }
 
