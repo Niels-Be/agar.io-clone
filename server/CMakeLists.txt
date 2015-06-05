@@ -37,9 +37,6 @@ set(SOURCE_FILES
     CMakeLists.txt)
 
 include_directories(src)
-include_directories("/home/niels/.node-gyp/0.12.2/deps/v8/include/")
-include_directories("/home/niels/.node-gyp/0.12.2/deps/uv/include/")
-include_directories("/home/niels/.node-gyp/0.12.2/src/")
 
 add_executable(server ${SOURCE_FILES} src/Network/AgarPackets.cpp src/Network/AgarPackets.h)
 

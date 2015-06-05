@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <functional>
+#include <assert.h>
 
 using std::function;
 
@@ -22,8 +23,6 @@ using std::map;
 using std::unordered_map;
 
 typedef std::string String;
-
-#include <node.h>
 
 #include <algorithm>
 using std::max;
