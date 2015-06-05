@@ -29,6 +29,8 @@ module.exports = function (grunt) {
         files: {
           'client/js/app.js': [
             'client/lib/helper.coffee',
+            'client/lib/packets.coffee',
+            'client/lib/network.coffee',
             'client/lib/ball.coffee',
             'client/lib/grid.coffee',
             'client/lib/client.coffee'
@@ -44,9 +46,6 @@ module.exports = function (grunt) {
           'build/spec.js': ['spec/support/**/*.coffee', 'spec/lib/**/*.coffee']
         }
       },
-    },
-    gyp: {
-      GamefieldUpdater: { }
     },
     uglify: {
       build: {
@@ -75,5 +74,5 @@ module.exports = function (grunt) {
     }
   });
 
-  grunt.registerTask('default', ['coffee', 'gyp', 'uglify', 'mocha']);
+  grunt.registerTask('default', ['coffee', 'uglify', 'mocha']);
 };

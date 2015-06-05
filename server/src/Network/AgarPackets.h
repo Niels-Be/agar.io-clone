@@ -29,10 +29,6 @@ enum PacketID : uint8_t {
 };
 
 #pragma pack(1)
-struct StartPacket {
-	char Name[64];
-};
-
 struct TargetPacket {
 	double x;
 	double y;
@@ -43,6 +39,16 @@ struct StatsPacket {
 	double other;
 };
 #pragma pack()
+
+class StartPacket : public EmptyPacket<PID_Start> {
+public:
+	String Name;
+
+public:
+	StartPacket() { }
+
+	void parseData(const char* data, uint32_t size);
+};
 
 class PlayerUpdatePacket : public Packet {
 public:
@@ -56,8 +62,7 @@ public:
 	void parseData(const char* data, uint32_t size) {} //Is out packet only
 
 protected:
-	const void* getDataPtr() const;
-	uint32_t getDataLength() const;
+	void applyData(vector<uint8_t>& buffer) const;
 };
 
 class SetElementsPacket : public Packet {
@@ -72,8 +77,7 @@ public:
 	void parseData(const char* data, uint32_t size) {} //Is out packet only
 
 protected:
-	const void* getDataPtr() const;
-	uint32_t getDataLength() const;
+	void applyData(vector<uint8_t>& buffer) const;
 };
 
 class UpdateElementsPacket : public Packet {
@@ -81,6 +85,9 @@ public:
 	const vector<ElementPtr>& NewElements;
 	const vector<ElementPtr>& DeletedElements;
 	const vector<ElementPtr>& UpdatedElements;
+
+private:
+	uint32_t mLength;
 public:
 	UpdateElementsPacket(const vector<ElementPtr>& NewElements, const vector<ElementPtr>& DeletedElements,
 						 const vector<ElementPtr>& UpdatedElements) :
@@ -91,8 +98,7 @@ public:
 	void parseData(const char* data, uint32_t size) {} //Is out packet only
 
 protected:
-	const void* getDataPtr() const;
-	uint32_t getDataLength() const;
+	void applyData(vector<uint8_t>& buffer) const;
 };
 
 

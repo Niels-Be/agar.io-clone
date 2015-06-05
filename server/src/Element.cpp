@@ -10,7 +10,7 @@ bool Element::intersect(ElementPtr other) {
 }
 
 ElementData Element::get() const {
-	return ElementData {mId, getType(), mColor, ""};
+	return ElementData {mId, getType(), mColor, "", mPosition.x, mPosition.y, mSize};
 }
 
 ElementUpdateData Element::getUpdate() const {

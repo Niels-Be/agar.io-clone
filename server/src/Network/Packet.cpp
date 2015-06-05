@@ -6,10 +6,10 @@
 #include "Packet.h"
 
 String Packet::getData() const {
-	String buf(sizeof(uint8_t) + getDataLength(), '\0');
-	buf[0] = getId();
-	memcpy(&buf[1], getDataPtr(), getDataLength());
-	return buf;
+	vector<uint8_t> buf;
+	buf.push_back(getId());
+	applyData(buf);
+	return String(buf.begin(), buf.end());
 }
 
 

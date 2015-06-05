@@ -11,7 +11,7 @@
 
 RegisterPacket(PID_Join, EmptyPacket<PID_Join>)
 RegisterPacket(PID_Leave, EmptyPacket<PID_Leave>)
-RegisterPacket(PID_Start, StructPacket<PID_Start, StartPacket>)
+RegisterPacket(PID_Start, StartPacket)
 RegisterPacket(PID_UpdateTarget, StructPacket<PID_UpdateTarget, TargetPacket>)
 RegisterPacket(PID_SplitUp, EmptyPacket<PID_SplitUp>)
 RegisterPacket(PID_Shoot, EmptyPacket<PID_Shoot>)
@@ -19,82 +19,88 @@ RegisterPacket(PID_RIP, EmptyPacket<PID_RIP>)
 RegisterPacket(PID_GetStats, EmptyPacket<PID_GetStats>)
 
 
-const void* PlayerUpdatePacket::getDataPtr() const {
+
+
+template <class T>
+void applyValue(vector<uint8_t>& dest, const T& d) {
+	dest.insert(dest.end(), (uint8_t*)&d, ((uint8_t*)&d)+sizeof(T));
+}
+
+template<>
+void applyValue<String>(vector<uint8_t>& dest, const String& d) {
+	dest.insert(dest.end(), d.begin(), d.end());
+	dest.push_back(0);
+}
+
+template<>
+void applyValue<ElementData>(vector<uint8_t>& dest, const ElementData& ed) {
+	applyValue(dest, ed.id);
+	applyValue(dest, ed.type);
+	applyValue(dest, ed.color);
+	applyValue(dest, ed.name);
+	applyValue(dest, ed.x);
+	applyValue(dest, ed.y);
+	applyValue(dest, ed.size);
+}
+
+template<>
+void applyValue<ElementUpdateData>(vector<uint8_t>& dest, const ElementUpdateData& ed) {
+	applyValue(dest, ed.id);
+	applyValue(dest, ed.x);
+	applyValue(dest, ed.y);
+	applyValue(dest, ed.size);
+	applyValue(dest, ed.velX);
+	applyValue(dest, ed.velY);
+}
+
+
+void StartPacket::parseData(const char* data, uint32_t size) {
+	Name = String(data, size);
+}
+
+void PlayerUpdatePacket::applyData(vector<uint8_t>& buffer) const {
+	//Reserve required bytes
+	buffer.reserve(sizeof(uint32_t) + sizeof(uint32_t)*player->getBalls().size());
 	list<BallPtr> balls = player->getBalls();
 	uint32_t mass = 0;
-	char* buf = new char[getDataLength()];
-	char* pos = buf + sizeof(uint32_t);
 	for(BallPtr b : balls) {
-		uint32_t id = b->getId();
-		memcpy(pos, &id, sizeof(uint32_t));
-		pos += sizeof(uint32_t);
 		mass += b->getMass();
 	}
-	memcpy(buf, &mass, sizeof(mass));
+	applyValue(buffer, mass);
+	for(BallPtr b : balls) {
+		applyValue(buffer, b->getId());
+	}
 
-	assert(pos == buf+getDataLength());
-	return buf;
 }
 
-uint32_t PlayerUpdatePacket::getDataLength() const {
-	return sizeof(uint32_t) + sizeof(uint32_t)*player->getBalls().size();
-}
-
-
-
-
-const void* SetElementsPacket::getDataPtr() const {
-	char* buf = new char[getDataLength()];
-	char* pos = buf;
+void SetElementsPacket::applyData(vector<uint8_t>& buffer) const {
+	//Reserve an approximation of required bytes
+	buffer.reserve(sizeof(ElementData) * Elements.size() + 1);
 	for(ElementPtr e : Elements) {
-		ElementData&& ed = e->get();
-		memcpy(pos, &ed, sizeof(ElementData));
-		pos+=sizeof(ElementData);
+		applyValue(buffer, e->get());
 	}
-
-	assert(pos == buf+getDataLength());
-	return buf;
 }
 
-uint32_t SetElementsPacket::getDataLength() const {
-	return sizeof(ElementData) * Elements.size();
-}
+void UpdateElementsPacket::applyData(vector<uint8_t>& buffer) const {
+	//Reserve an approximation of required bytes
+	buffer.reserve(sizeof(uint16_t) +
+						sizeof(ElementData) * NewElements.size() +
+						sizeof(uint16_t) +
+						sizeof(uint32_t) * DeletedElements.size() +
+						sizeof(ElementUpdateData) * UpdatedElements.size());
 
-
-
-
-const void* UpdateElementsPacket::getDataPtr() const {
-	char* buf = new char[getDataLength()];
-	char* pos = buf;
-
-	uint16_t len = NewElements.size();
-	memcpy(pos, &len, sizeof(uint16_t));
-	pos += sizeof(uint16_t);
+	applyValue(buffer, (uint16_t)NewElements.size());
 	for(ElementPtr e : NewElements) {
-		ElementData&& ed = e->get();
-		memcpy(pos, &ed, sizeof(ElementData));
-		pos+=sizeof(ElementData);
+		applyValue(buffer, e->get());
 	}
 
-	len = DeletedElements.size();
-	memcpy(pos, &len, sizeof(uint16_t));
-	pos += sizeof(uint16_t);
+	applyValue(buffer, (uint16_t)DeletedElements.size());
 	for(ElementPtr e : DeletedElements) {
-		uint32_t id = e->getId();
-		memcpy(pos, &id, sizeof(uint32_t));
-		pos+=sizeof(uint32_t);
+		applyValue(buffer, e->getId());
 	}
 
 	for(ElementPtr e : UpdatedElements) {
-		ElementUpdateData&& ed = e->getUpdate();
-		memcpy(pos, &ed, sizeof(ElementUpdateData));
-		pos+=sizeof(ElementUpdateData);
+		applyValue(buffer, e->getUpdate());
 	}
 
-	assert(pos == buf+getDataLength());
-	return buf;
-}
-
-uint32_t UpdateElementsPacket::getDataLength() const {
-	return sizeof(uint16_t) + sizeof(ElementData) * NewElements.size() + sizeof(uint16_t) + sizeof(uint32_t) * DeletedElements.size() + sizeof(ElementUpdateData) * UpdatedElements.size();
 }

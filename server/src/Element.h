@@ -29,6 +29,9 @@ struct ElementData {
 	ElementType type;
 	String color;
 	String name;
+	double x;
+	double y;
+	double size;
 };
 
 struct ElementUpdateData {

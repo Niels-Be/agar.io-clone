@@ -49,6 +49,12 @@ struct Options {
 
 };
 
+struct FPSControl {
+	list<std::chrono::high_resolution_clock::duration> timerUpdate;
+	list<std::chrono::high_resolution_clock::duration> timerCollision;
+	list<std::chrono::high_resolution_clock::duration> timerOther;
+};
+
 class Gamefield : public std::enable_shared_from_this<Gamefield> {
 private:
 	ServerPtr mServer;
@@ -69,6 +75,8 @@ private:
 
 	bool mUpdaterRunning = false;
 	std::thread mUpdaterThread;
+
+	FPSControl mFPSControl;
 
 public:
 	Gamefield(ServerPtr server);

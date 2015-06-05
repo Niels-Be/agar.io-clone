@@ -1,6 +1,5 @@
 class Game
-	lobbySocket: io()
-	socket: null
+	net: new Network("ws://localhost:3000")
 
 	screen:
 		width: window.innerWidth
@@ -12,6 +11,12 @@ class Game
 
 	gameStarted: false
 	inRoom: false
+
+	@ElementTypes:
+		0: "ball",
+		1: "food",
+		2: "shoot",
+		3: "obstracle"
 
 	@defaultOptions:
 		viewPortScaleFactor: 0.01
@@ -61,6 +66,8 @@ class Game
 		x: 0
 		y: 0
 		size: 0
+		mass: 0
+		balls: []
 
 	elements: {}	
 
@@ -81,6 +88,7 @@ class Game
 		@grid = new Grid(@, @options.grid)
 		@init()
 
+		###
 		@lobbySocket.emit "getRooms"
 
 		@lobbySocket.on "availableRooms", (rooms) =>
@@ -97,62 +105,64 @@ class Game
 			else
 				console.log("Room Create:", err)
 
+		###
+
+		#setup callbacks on the socket
+
+		@net.onConnect =>
+			console.log("Connected")
+			@net.emit Network.Packets.Join
+			@gamefield =
+				width: 5000
+				height: 5000
+			@inRoom = true
+			@updatePlayer()
+
+		@net.on Network.Packets.Start, =>
+			@gameStarted = true
+
+		@net.on Network.Packets.SetElements, (packet) =>
+			#just replace the entiere list
+			@elements = {}
+			for o in packet.elements
+				@elements[o.id] = new Ball(@options[Game.ElementTypes[o.type]], o)
+
+		@net.on Network.Packets.UpdateElements, (packet) =>
+			for o in packet.newElements
+				@elements[o.id] = new Ball(@options[Game.ElementTypes[o.type]], o)
+				if(o.type == 0)
+					console.log(o)
+			for o in packet.deletedElements
+				delete @elements[o]
+			for o in packet.updateElements
+				@elements[o.id].updateData(o)
+
+
+		@net.on Network.Packets.PlayerUpdate, (packet) =>
+			@player.mass = packet.mass
+			@player.balls = packet.balls
+
+			@massText.innerHTML = "Mass: "+@player.mass
+			for b in @player.balls when @elements.hasOwnProperty(b)
+				@elements[b].options = @options.player
+			@updatePlayer()
+
+		@net.on Network.Packets.RIP, =>
+			@gameStarted = false
+			spawnbox.hidden = false
+			#@lobbySocket.emit "getRooms"
+
+		@net.onDisconnect =>
+			console.log("Disconnected")
+			@inRoom = false;
+
+		@net.on Network.Packets.GetStats, (packet) =>
+			console.log("Stats", packet)
+
+
 
 		#stat the main loop
 		@loop()
-
-	#setup callbacks on the socket
-	setCallbacks: (@socket) ->
-		@socket.on "connect", =>
-			console.log("Connected")
-		@socket.on "reconnect", =>
-			console.log("Reconnected")
-
-		@socket.on "playerJoined", (ply) =>
-			console.log("A player joind:", ply)
-
-		@socket.on "start", (@player) =>
-			@updatePlayer()
-			@gameStarted = true
-
-		@socket.on "setElements", (objs) =>
-			#just replace the entiere list
-			@elements = {}
-			for o in objs
-				@elements[o.id] = new Ball(@options[o.type], o)
-
-		@socket.on "updateElements", (objs) =>
-			for o in objs.created
-				@elements[o.id] = new Ball(@options[o.type], o)
-			for o in objs.deleted
-				delete @elements[o]
-			for o in objs.positions
-				@elements[o.id].updateData(o)
-			#a bit hacky but faster then checking every moveable
-			if @player.balls
-				for b in @player.balls when @elements.hasOwnProperty(b)
-					@elements[b].options = @options.player
-
-		@socket.on "updatePlayer", (@player) =>
-			@massText.innerHTML = "Mass: "+@player.mass
-			@updatePlayer()
-
-		@socket.on "rip", =>
-			@gameStarted = false
-			spawnbox.hidden = false
-			@lobbySocket.emit "getRooms"
-
-		@socket.on "disconnect", =>
-			console.log("Disconnected")
-			@socket.close();
-			@inRoom = false;
-
-		@socket.on "error", (err) =>
-			console.log("Error:",err)
-
-		@socket.on "stats", (stats) =>
-			console.log("Stats", stats)
-
 
 	#initialize the window
 	init: ->
@@ -163,8 +173,9 @@ class Game
 			@target.y = evt.clientY - @screen.height / 2;
 		@canvas.addEventListener "keypress", (evt) =>
 			#console.log("Key:", evt.keyCode, evt.charCode)
-			@socket.emit "splitUp", @target if evt.charCode == 32
-			@socket.emit "shoot", @target if evt.charCode == 119
+			@net.emit Network.Packets.SplitUp if evt.charCode == 32
+			@net.emit Network.Packets.Shoot if evt.charCode == 119
+			@getStats() if evt.charCode == 100
 		#TODO add touch events
 
 		@canvas.width = @screen.width
@@ -216,7 +227,7 @@ class Game
 	start: ->
 		console.log("Starting Game")
 		@name = @nameText.value
-		@socket.emit "start", @name
+		@net.emit new StartPacket(@name)
 
 		#Hide panel and set focus to canvas
 		spawnbox.hidden = true
@@ -236,8 +247,9 @@ class Game
 	update: (timediff) ->
 		for i,m of @elements
 			m.update timediff
-		@updatePlayer()
-		@socket.emit "updateTarget", @target
+		if @gameStarted
+			@updatePlayer()
+			@net.emit new TargetPacket(@target.x, @target.y)
 
 		@fpstimer += timediff
 		@fps++
@@ -294,7 +306,7 @@ class Game
 
 	#debug method to get performance information from the server
 	getStats: ->
-		@socket.emit "getStats"
+		@net.emit Network.Packets.GetStats
 		return
 
 	createRoom: (name, options) ->

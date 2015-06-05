@@ -10,6 +10,7 @@
 
 class Packet {
 public:
+	virtual ~Packet() {}
 	virtual uint8_t getId() const = 0;
 
 	String getData() const;
@@ -17,20 +18,20 @@ public:
 	virtual void parseData(const char* data, uint32_t size) = 0;
 
 protected:
-	virtual const void* getDataPtr() const = 0;
-	virtual uint32_t getDataLength() const = 0;
+	virtual void applyData(vector<uint8_t>& buffer) const = 0;
 };
 
 template<uint8_t ID>
 class EmptyPacket : public Packet {
 public:
+	virtual ~EmptyPacket() {}
+
 	uint8_t getId() const { return ID; }
 
-	void parseData(const char* data, uint32_t size) {}
+	virtual void parseData(const char* data, uint32_t size) {}
 
 protected:
-	const void* getDataPtr() const { return NULL; }
-	uint32_t getDataLength() const { return 0; }
+	virtual void applyData(vector<uint8_t>& buffer) const { }
 };
 
 template <uint8_t ID, class T>
@@ -41,7 +42,7 @@ public:
 	StructPacket() {}
 
 	template<class... Args>
-	StructPacket(Args&&... args) : mData{std::forward(args...)} { }
+	StructPacket(Args&&... args) : mData{std::forward<Args>(args)...} { }
 
 	uint8_t getId() const { return ID; }
 
@@ -56,8 +57,9 @@ public:
 	const T* operator->() const { return &mData; }
 
 protected:
-	const void* getDataPtr() const { return &mData; }
-	uint32_t getDataLength() const { return sizeof(T); }
+	void applyData(vector<uint8_t>& buffer) const {
+		buffer.assign((uint8_t*)&mData, ((uint8_t*)&mData)+sizeof(T));
+	}
 };
 
 

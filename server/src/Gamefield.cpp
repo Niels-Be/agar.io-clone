@@ -117,10 +117,19 @@ void Gamefield::updateLoop() {
 }
 
 void Gamefield::update(double timediff) {
+	using namespace std::chrono;
+	using timer=std::chrono::high_resolution_clock;
+
+	timer::duration timerStart = timer::now().time_since_epoch();
+
 	for (ElementPtr e : mElements)
 		e->update(timediff);
 
+	timer::duration timerUpdate = timer::now().time_since_epoch() - timerStart;
+
 	checkCollisions(timediff);
+
+	timer::duration timerCollision = timer::now().time_since_epoch() - timerUpdate - timerStart;
 
 	for (auto p : mPlayer)
 		p.second->update(timediff);
@@ -139,9 +148,26 @@ void Gamefield::update(double timediff) {
 	}
 
 	//Send updated data
-	sendToAll(std::make_shared<UpdateElementsPacket>(mNewElements, mDeletedElements, mElements));
+	vector<ElementPtr> changed;
+	changed.reserve(mElements.size());
+	for(ElementPtr e : mElements)
+		if(e->hasChanged())
+			changed.push_back(e);
+	if(mNewElements.size() + mDeletedElements.size() + changed.size() > 0)
+		sendToAll(std::make_shared<UpdateElementsPacket>(mNewElements, mDeletedElements, changed));
 	mNewElements.clear();
 	mDeletedElements.clear();
+
+	timer::duration timerOther = timer::now().time_since_epoch() - timerCollision - timerUpdate - timerStart;
+
+	mFPSControl.timerUpdate.push_back(timerUpdate);
+	mFPSControl.timerCollision.push_back(timerCollision);
+	mFPSControl.timerOther.push_back(timerOther);
+	if(mFPSControl.timerUpdate.size() > 60) {
+		mFPSControl.timerUpdate.pop_front();
+		mFPSControl.timerCollision.pop_front();
+		mFPSControl.timerOther.pop_front();
+	}
 }
 
 struct CollisionStore {
@@ -203,6 +229,7 @@ void Gamefield::checkCollisions(double timediff) {
 	//Check collisions
 	for (size_t i = 0; i < mElements.size(); i++) {
 		ElementPtr e1 = mElements[i];
+		if(e1->getType() == ET_Food) continue;
 		//Start at i because we already checked elements before
 		for (size_t j = i; j < mElements.size(); j++) {
 			ElementPtr e2 = mElements[j];
@@ -282,13 +309,25 @@ void Gamefield::onLeave(ClientPtr client, PacketPtr packet) {
 }
 
 void Gamefield::onStart(ClientPtr client, PacketPtr packet) {
+	auto p = std::dynamic_pointer_cast<StartPacket >(packet);
 	//TODO color
-	PlayerPtr ply = std::make_shared<Player>(shared_from_this(), client, "some color", "sone name");
+	PlayerPtr ply = std::make_shared<Player>(shared_from_this(), client, "some color", p->Name);
 	mPlayer[client->getId()] = ply;
 	ply->addBall(createBall(ply));
 }
 
 void Gamefield::onGetStats(ClientPtr client, PacketPtr packet) {
-	//TODO gather stats
+	double timerUpdate = 0;
+	double timerCollision = 0;
+	double timerOther = 0;
+	for(auto it : mFPSControl.timerUpdate)
+		timerUpdate += std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(it).count() / mFPSControl.timerUpdate.size();
+	for(auto it : mFPSControl.timerCollision)
+		timerCollision += std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(it).count() / mFPSControl.timerCollision.size();
+	for(auto it : mFPSControl.timerOther)
+		timerOther += std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(it).count() / mFPSControl.timerOther.size();
+
+	printf("Timings: Update: %lf Collision: %lf Other: %lf\n", timerUpdate, timerCollision, timerOther);
+	client->emit(std::make_shared<StructPacket<PID_GetStats, StatsPacket> >(timerUpdate, timerCollision, timerOther));
 }
 
