@@ -21,7 +21,6 @@ Player::Player(GamefieldPtr mGamefield, ClientPtr mClient, const String& mColor,
 }
 
 void Player::setTarget(const Vector& target) {
-	mTarget = target;
 	for (BallPtr ball : mBalls) {
 		Vector t = target - (ball->getPosition() - mPosition);
 		if (t.lengthSquared() < ball->getSize() * ball->getSize() / 4)
@@ -77,6 +76,7 @@ void Player::update(double /*timediff*/) {
 		size += ball->getSize();
 	}
 	mPosition /= size;
+	setTarget(mTarget);
 }
 
 void Player::onSplitUp(ClientPtr client, PacketPtr packet) {
@@ -89,7 +89,8 @@ void Player::onShoot(ClientPtr client, PacketPtr packet) {
 
 void Player::onUpdateTarget(ClientPtr client, PacketPtr packet) {
 	auto p = std::dynamic_pointer_cast<StructPacket<PID_UpdateTarget, TargetPacket> >(packet);
-	setTarget(Vector((*p)->x, (*p)->y));
+	mTarget = Vector((*p)->x, (*p)->y);
+	setTarget(mTarget);
 }
 
 void Player::updateClient() {
