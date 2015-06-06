@@ -52,15 +52,10 @@ class SetElementsPacket extends Packet
 	parseData: (data) ->
 		@elements = []
 		pos = 1
-		try 
-			while pos < data.byteLength
-				[pos, e] = Network.parseElementData(data, pos)
-				@elements.push e
-		catch err
-			console.log(err)
-		finally
-			console.log("SetElementsPacket", data.byteLength, @elements.length)
-
+		while pos < data.byteLength
+			[pos, e] = Network.parseElementData(data, pos)
+			@elements.push e
+		
 
 class UpdateElementsPacket extends Packet
 	constructor: ->
