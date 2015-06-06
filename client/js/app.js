@@ -828,18 +828,27 @@
     };
 
     Game.prototype.render = function() {
-      var i, m, ref, results, scale;
-      this.graph.setTransform(1, 0, 0, 1, 0, 0);
-      this.graph.fillStyle = this.options.backgroundColor;
-      this.graph.fillRect(0, 0, this.screen.width, this.screen.height);
+      var i, m, ref, results, scale, viewPort;
       scale = 1 / (this.options.viewPortScaleFactor * this.player.size + 1);
       this.graph.setTransform(scale, 0, 0, scale, this.screen.width / 2 - this.player.x * scale, this.screen.height / 2 - this.player.y * scale);
+      viewPort = {
+        left: this.player.x - this.screen.width / 2 / scale,
+        top: this.player.y - this.screen.height / 2 / scale,
+        right: this.player.x + this.screen.width / 2 / scale,
+        botom: this.player.y + this.screen.height / 2 / scale
+      };
+      this.graph.fillStyle = this.options.backgroundColor;
+      this.graph.fillRect(viewPort.left, viewPort.top, this.screen.width / scale, this.screen.height / scale);
       this.grid.render(this.graph);
       ref = this.elements;
       results = [];
       for (i in ref) {
         m = ref[i];
-        results.push(m.render(this.graph));
+        if (m.x + m.size > viewPort.left && m.y + m.size > viewPort.top && m.x - m.size < viewPort.right && m.y - m.size < viewPort.botom) {
+          results.push(m.render(this.graph));
+        } else {
+          results.push(void 0);
+        }
       }
       return results;
     };

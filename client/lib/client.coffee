@@ -307,13 +307,13 @@ class Game
 	#render everything
 	render: ->
 		#Clear Canvas
-		@graph.setTransform(1,0,0,1,0,0);
-		@graph.fillStyle = @options.backgroundColor;
-		@graph.fillRect(0, 0, @screen.width, @screen.height);
+		#@graph.setTransform(1,0,0,1,0,0);
+		#@graph.fillStyle = @options.backgroundColor;
+		#@graph.fillRect(0, 0, @screen.width, @screen.height);
 
 		#Setup Camera
 		scale = 1 / (@options.viewPortScaleFactor * @player.size + 1)
-
+		
 		#We always draw the entiere gamefield and only move the camera arround
 		#this prevents a lot calculations
 		@graph.setTransform(
@@ -325,11 +325,25 @@ class Game
 			@screen.height / 2 - @player.y * scale  #translate y
 		)
 
+		viewPort =
+			left: @player.x - @screen.width / 2 / scale
+			top: @player.y - @screen.height / 2 / scale
+			right: @player.x + @screen.width / 2 / scale
+			botom: @player.y + @screen.height / 2 / scale 
+
+		#Clear Canvas
+		@graph.fillStyle = @options.backgroundColor;
+		@graph.fillRect(viewPort.left, viewPort.top, @screen.width / scale, @screen.height / scale);
 
 		@grid.render(@graph)
 		
 		for i,m of @elements
-			m.render(@graph)
+			if (m.x + m.size > viewPort.left &&
+					m.y + m.size > viewPort.top &&
+					m.x - m.size < viewPort.right &&
+					m.y - m.size < viewPort.botom )
+
+				m.render(@graph)
 
 	#debug method to get performance information from the server
 	getStats: ->
