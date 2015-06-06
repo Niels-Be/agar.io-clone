@@ -126,7 +126,7 @@ void Gamefield::updateLoop() {
 		timer::duration sleeptime = fps - (timer::now().time_since_epoch() - timestamp);
 		if(sleeptime > milliseconds(1))
 			std::this_thread::sleep_for(sleeptime);
-		else
+		else if(sleeptime < milliseconds(0))
 			printf("I am to slow !!!! %lf\n", duration_cast<duration<double, std::milli> >(sleeptime).count());
 	}
 	printf("Updater Stoped\n");
@@ -169,7 +169,12 @@ void Gamefield::update(double timediff) {
 	}
 
 	//Send updated data
-	if(mNewElements.size() + mDeletedElements.size() + changed.size() > 0) {
+	mElementUpdateTimer+=timediff;
+	if(mElementUpdateTimer > 2) {
+		sendToAll(std::make_shared<SetElementsPacket>(mElements));
+		mElementUpdateTimer = 0;
+	}
+	else if(mNewElements.size() + mDeletedElements.size() + changed.size() > 0) {
 		sendToAll(std::make_shared<UpdateElementsPacket>(mNewElements, mDeletedElements, changed));
 		//printf("Sending Update %ld\n", mElements.size());
 	}

@@ -74,6 +74,7 @@ private:
 	double mObstracleSpawnTimer = 0;
 	uint32_t mObstracleCounter = 0;
 
+	double mElementUpdateTimer = 0;
 	volatile bool mUpdaterRunning = false;
 	std::thread mUpdaterThread;
 

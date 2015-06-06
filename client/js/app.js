@@ -606,28 +606,40 @@
       })(this));
       this.net.on(Network.Packets.UpdateElements, (function(_this) {
         return function(packet) {
-          var k, l, len, len1, len2, n, o, ref, ref1, ref2, results;
-          ref = packet.newElements;
-          for (k = 0, len = ref.length; k < len; k++) {
-            o = ref[k];
-            _this.elements[o.id] = new Ball(_this.options[Game.ElementTypes[o.type]], o);
-            if (o.type === 0 && _this.player.balls.hasOwnProperty(o.id)) {
-              _this.elements[o.id].options = _this.options.player;
-              _this.player.balls[o.id] = _this.elements[o.id];
+          var err, k, l, len, len1, len2, n, o, ref, ref1, ref2, results;
+          try {
+            ref = packet.newElements;
+            for (k = 0, len = ref.length; k < len; k++) {
+              o = ref[k];
+              _this.elements[o.id] = new Ball(_this.options[Game.ElementTypes[o.type]], o);
+              if (o.type === 0 && _this.player.balls.hasOwnProperty(o.id)) {
+                _this.elements[o.id].options = _this.options.player;
+                _this.player.balls[o.id] = _this.elements[o.id];
+              }
             }
+          } catch (_error) {
+            err = _error;
           }
-          ref1 = packet.deletedElements;
-          for (l = 0, len1 = ref1.length; l < len1; l++) {
-            o = ref1[l];
-            delete _this.elements[o];
+          try {
+            ref1 = packet.deletedElements;
+            for (l = 0, len1 = ref1.length; l < len1; l++) {
+              o = ref1[l];
+              delete _this.elements[o];
+            }
+          } catch (_error) {
+            err = _error;
           }
-          ref2 = packet.updateElements;
-          results = [];
-          for (n = 0, len2 = ref2.length; n < len2; n++) {
-            o = ref2[n];
-            results.push(_this.elements[o.id].updateData(o));
+          try {
+            ref2 = packet.updateElements;
+            results = [];
+            for (n = 0, len2 = ref2.length; n < len2; n++) {
+              o = ref2[n];
+              results.push(_this.elements[o.id].updateData(o));
+            }
+            return results;
+          } catch (_error) {
+            err = _error;
           }
-          return results;
         };
       })(this));
       this.net.on(Network.Packets.PlayerUpdate, (function(_this) {

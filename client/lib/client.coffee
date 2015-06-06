@@ -130,18 +130,24 @@ class Game
 				@elements[o.id] = new Ball(@options[Game.ElementTypes[o.type]], o)
 
 		@net.on Network.Packets.UpdateElements, (packet) =>
-			for o in packet.newElements
-				@elements[o.id] = new Ball(@options[Game.ElementTypes[o.type]], o)
-				if(o.type == 0 && @player.balls.hasOwnProperty(o.id))
-					@elements[o.id].options = @options.player
-					@player.balls[o.id] = @elements[o.id]
-					#console.log("PlayerBall", @elements[o.id])
-			for o in packet.deletedElements
-				delete @elements[o]
-			for o in packet.updateElements
-				@elements[o.id].updateData(o)
-				#console.log("Update", @elements[o.id].x, @elements[o.id].y)
-
+			#Ignore all errors
+			try
+				for o in packet.newElements
+					@elements[o.id] = new Ball(@options[Game.ElementTypes[o.type]], o)
+					if(o.type == 0 && @player.balls.hasOwnProperty(o.id))
+						@elements[o.id].options = @options.player
+						@player.balls[o.id] = @elements[o.id]
+						#console.log("PlayerBall", @elements[o.id])
+			catch err
+			try
+				for o in packet.deletedElements
+					delete @elements[o]
+			catch err
+			try
+				for o in packet.updateElements
+					@elements[o.id].updateData(o)
+					#console.log("Update", @elements[o.id].x, @elements[o.id].y)
+			catch err
 
 		@net.on Network.Packets.PlayerUpdate, (packet) =>
 			@player.mass = packet.mass
