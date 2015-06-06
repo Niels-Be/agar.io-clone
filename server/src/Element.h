@@ -55,7 +55,6 @@ protected:
 	uint32_t mMass;
 
 private:
-	bool mSizeHasChanged = false;
 	bool mHasChanged = false;
 	bool mDeleted = false;
 
@@ -72,12 +71,11 @@ public:
 
 	void setSize(double size) {
 		mSize = size;
-		mSizeHasChanged = true;
 	}
 
 	double getSize() const { return mSize; }
 
-	virtual void setMass(int32_t mass) { mMass = mass; }
+	virtual void setMass(int32_t mass) { mMass = mass; changed(); }
 
 	void addMass(int32_t mass) { setMass(mMass + mass); }
 
@@ -89,7 +87,7 @@ public:
 
 	bool intersect(ElementPtr other);
 
-	virtual void update(double /*timediff*/) { mHasChanged = mSizeHasChanged = false; }
+	virtual void update(double /*timediff*/) { mHasChanged = false; }
 
 	virtual ElementType getType() const = 0;
 

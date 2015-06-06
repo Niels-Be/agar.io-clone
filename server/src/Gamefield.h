@@ -31,7 +31,7 @@ struct Options {
 		double eatFactor = 1.2;
 		uint32_t minSplitMass = 20;
 		uint32_t starveOffset = 250;
-		double starveMassFactor = 0.005; //Percent of mass per sec
+		double starveMassFactor = 0.001; //Percent of mass per sec
 	} player;
 	struct {
 		uint32_t mass = 10;

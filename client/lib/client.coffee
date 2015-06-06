@@ -135,7 +135,7 @@ class Game
 				if(o.type == 0 && @player.balls.hasOwnProperty(o.id))
 					@elements[o.id].options = @options.player
 					@player.balls[o.id] = @elements[o.id]
-					console.log("PlayerBall", @elements[o.id])
+					#console.log("PlayerBall", @elements[o.id])
 			for o in packet.deletedElements
 				delete @elements[o]
 			for o in packet.updateElements
@@ -150,10 +150,10 @@ class Game
 				if @elements.hasOwnProperty(b)
 					@player.balls[b] = @elements[b]
 					@elements[b].options = @options.player
-					console.log("PlayerBall", @elements[b])
+					#console.log("PlayerBall", @elements[b])
 				else
 					@player.balls[b] = null
-			console.log(@player, packet)
+			#console.log(@player, packet)
 			@massText.innerHTML = "Mass: "+@player.mass
 			@updatePlayer()
 

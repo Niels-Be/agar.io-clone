@@ -4,23 +4,6 @@ module.exports = function (grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
     coffee: {
-      server: {
-        options: { 
-          bare: true,
-          join: true
-        },
-        files: {
-          'server/server.js': [
-            'server/lib/helper.coffee',
-            'server/lib/player.coffee',
-            'server/lib/element.coffee',
-            'server/lib/gamefield.coffee',
-            'server/lib/food.coffee',
-            'server/lib/ball.coffee',
-            'server/lib/server.coffee'
-          ],
-        }
-      },
       client: {
         options: { 
           bare: false,
@@ -36,16 +19,7 @@ module.exports = function (grunt) {
             'client/lib/client.coffee'
           ],
         }
-      },
-      spec: {
-        options: { 
-          bare: true, 
-          join: true 
-        },
-        files: {
-          'build/spec.js': ['spec/support/**/*.coffee', 'spec/lib/**/*.coffee']
-        }
-      },
+      }
     },
     uglify: {
       build: {
@@ -53,18 +27,13 @@ module.exports = function (grunt) {
           preserveComments: 'none'
         },
         files: {
-          'server/server.min.js': 'server/server.js',
           'client/js/app.min.js': 'client/js/app.js'
         }
       }
     },
-    mocha: {
-      index: ['spec/specs.html'],
-      options: {run: true}
-    },
     watch: {
       all: {
-        files: ['*/lib/**/*.coffee', 'spec/lib/**/*.coffee', 'spec/support/**/*.coffee', 'less/**/*.less'],
+        files: ['*/lib/**/*.coffee'],
         tasks: 'default'
       },
       dev: {
@@ -74,5 +43,5 @@ module.exports = function (grunt) {
     }
   });
 
-  grunt.registerTask('default', ['coffee', 'uglify', 'mocha']);
+  grunt.registerTask('default', ['coffee', 'uglify']);
 };

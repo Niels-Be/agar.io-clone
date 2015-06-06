@@ -72,6 +72,7 @@ void Ball::update(double timediff) {
 			mStarveMass += mMass * mGamefield->getOptions().player.starveMassFactor;
 			addMass(-floor(mStarveMass));
 			mStarveMass -= floor(mStarveMass);
+			mPlayer->updateClient();
 		}
 		mStarveTimer = 0;
 	}

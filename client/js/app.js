@@ -614,7 +614,6 @@
             if (o.type === 0 && _this.player.balls.hasOwnProperty(o.id)) {
               _this.elements[o.id].options = _this.options.player;
               _this.player.balls[o.id] = _this.elements[o.id];
-              console.log("PlayerBall", _this.elements[o.id]);
             }
           }
           ref1 = packet.deletedElements;
@@ -642,12 +641,10 @@
             if (_this.elements.hasOwnProperty(b)) {
               _this.player.balls[b] = _this.elements[b];
               _this.elements[b].options = _this.options.player;
-              console.log("PlayerBall", _this.elements[b]);
             } else {
               _this.player.balls[b] = null;
             }
           }
-          console.log(_this.player, packet);
           _this.massText.innerHTML = "Mass: " + _this.player.mass;
           return _this.updatePlayer();
         };
