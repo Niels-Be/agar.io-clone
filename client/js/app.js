@@ -125,22 +125,15 @@
     }
 
     SetElementsPacket.prototype.parseData = function(data) {
-      var e, err, pos, ref, results;
+      var e, pos, ref, results;
       this.elements = [];
       pos = 1;
-      try {
-        results = [];
-        while (pos < data.byteLength) {
-          ref = Network.parseElementData(data, pos), pos = ref[0], e = ref[1];
-          results.push(this.elements.push(e));
-        }
-        return results;
-      } catch (_error) {
-        err = _error;
-        return console.log(err);
-      } finally {
-        console.log("SetElementsPacket", data.byteLength, this.elements.length);
+      results = [];
+      while (pos < data.byteLength) {
+        ref = Network.parseElementData(data, pos), pos = ref[0], e = ref[1];
+        results.push(this.elements.push(e));
       }
+      return results;
     };
 
     return SetElementsPacket;

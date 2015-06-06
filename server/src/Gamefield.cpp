@@ -215,12 +215,11 @@ uint64_t hash(uint32_t a, uint32_t b) {
 void Gamefield::checkCollisions(double timediff) {
 /* TODO Check which algorithm is faster
  * // This algorithm is faster if exact collision detection is hard (not our case)
- * // Theoretic O(n * log n)
 	unordered_map<uint64_t, CollisionStore> elements;
 
 	//Update Objects in collision map
 	for(auto&& it : elements)
-		it.second.distance -= (it.second.e1->getSpeed() + it.second.e2->getSpeed()) * timediff;
+		it.second.distance -= (it.second.e1->getSpeed() + it.second.e2->getSpeed())*(it.second.e1->getSpeed() + it.second.e2->getSpeed()) * timediff;
 
 	//Insert new Objects into Collision Map
 	for(ElementPtr e1 : mNewElements)
@@ -251,7 +250,6 @@ void Gamefield::checkCollisions(double timediff) {
 		for(ElementPtr e2 : mElements)
 			elements.erase(hash(e1->getId(), e2->getId()));
 */
-	// O(n * log n)
 	//Check collisions
 	for (size_t i = 0; i < mElements.size(); i++) {
 		ElementPtr e1 = mElements[i];

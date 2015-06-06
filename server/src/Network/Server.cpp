@@ -10,6 +10,8 @@
 #include <websocketpp/server.hpp>
 #include <websocketpp/config/asio_no_tls.hpp>
 
+#include <iostream>
+
 typedef websocketpp::server<websocketpp::config::asio> WebSocket;
 
 typedef WebSocket::message_ptr message_ptr;
@@ -77,12 +79,16 @@ void Server::ServerImpl::close() {
 
 
 void Server::ServerImpl::emit(uint64_t id, String&& message) {
-	server.send(toHdl(id), message, websocketpp::frame::opcode::BINARY);
+	try {
+		server.send(toHdl(id), message, websocketpp::frame::opcode::BINARY);
+	} catch (websocketpp::exception& e) {
+		std::cerr << "WebSocket Error:" << e.what() << std::endl;
+	}
 }
 
 void Server::ServerImpl::emit(String&& message) {
 	for(auto it : mClients)
-		server.send(toHdl(it.first), message, websocketpp::frame::opcode::BINARY);
+		emit(it.first, std::forward<String>(message));
 }
 
 void Server::ServerImpl::onOpen(connection_hdl hdl) {
