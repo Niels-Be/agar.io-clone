@@ -128,6 +128,9 @@ class Game
 			@elements = {}
 			for o in packet.elements
 				@elements[o.id] = new Ball(@options[Game.ElementTypes[o.type]], o)
+				if(o.type == 0 && @player.balls.hasOwnProperty(o.id))
+					@elements[o.id].options = @options.player
+					@player.balls[o.id] = @elements[o.id]
 
 		@net.on Network.Packets.UpdateElements, (packet) =>
 			#Ignore all errors

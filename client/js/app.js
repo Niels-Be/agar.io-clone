@@ -599,7 +599,13 @@
           results = [];
           for (k = 0, len = ref.length; k < len; k++) {
             o = ref[k];
-            results.push(_this.elements[o.id] = new Ball(_this.options[Game.ElementTypes[o.type]], o));
+            _this.elements[o.id] = new Ball(_this.options[Game.ElementTypes[o.type]], o);
+            if (o.type === 0 && _this.player.balls.hasOwnProperty(o.id)) {
+              _this.elements[o.id].options = _this.options.player;
+              results.push(_this.player.balls[o.id] = _this.elements[o.id]);
+            } else {
+              results.push(void 0);
+            }
           }
           return results;
         };
