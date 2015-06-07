@@ -31,8 +31,8 @@ Gamefield::~Gamefield() {
 		mUpdaterThread.join();
 }
 
-BallPtr Gamefield::createBall(PlayerPtr player) {
-	BallPtr b = std::make_shared<Ball>(shared_from_this(), mElementIds++, generatePos(), player);
+BallPtr Gamefield::createBall(PlayerPtr player, const Vector& position) {
+	BallPtr b = std::make_shared<Ball>(shared_from_this(), mElementIds++, position, player);
 	mElements.push_back(b);
 	mNewElements.push_back(b);
 	mQuadTree->add(b);
@@ -122,7 +122,7 @@ void Gamefield::updateLoop() {
 
 		timerFPS+=diff;
 		if(timerFPS > 1) {
-			onGetStats(ClientPtr(), PacketPtr());
+			//onGetStats(ClientPtr(), PacketPtr());
 			timerFPS = 0;
 		}
 

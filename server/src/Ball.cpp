@@ -18,12 +18,14 @@ Ball::Ball(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, Playe
 }
 
 BallPtr Ball::splitUp(const Vector& direction) {
-	BallPtr b = mGamefield->createBall(mPlayer);
+	Vector pos(
+			min(max(mPosition.x + direction.x * mSize * 1.6, 0.), mGamefield->getOptions().width),
+			min(max(mPosition.y + direction.y * mSize * 1.6, 0.), mGamefield->getOptions().height)
+	);
+	BallPtr b = mGamefield->createBall(mPlayer, pos);
 	b->setMass(mMass / 2);
 	this->setMass(mMass / 2);
 
-	b->mPosition.x = min(max(mPosition.x + direction.x * mSize * 1.6, 0.), mGamefield->getOptions().width);
-	b->mPosition.y = min(max(mPosition.y + direction.y * mSize * 1.6, 0.), mGamefield->getOptions().height);
 	//TODO deflect on wall
 
 	b->setDirection(direction);

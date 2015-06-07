@@ -85,7 +85,8 @@ public:
 	Gamefield(ServerPtr server);
 	~Gamefield();
 
-	BallPtr createBall(PlayerPtr player);
+	BallPtr createBall(PlayerPtr player) { return createBall(player, generatePos()); }
+	BallPtr createBall(PlayerPtr player, const Vector& position);
 
 	ShootPtr createShoot(const Vector& pos, const String& color, const Vector& direction);
 
