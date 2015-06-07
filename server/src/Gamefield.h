@@ -68,6 +68,7 @@ private:
 	vector<ElementPtr> mNewElements;
 	vector<ElementPtr> mDeletedElements;
 
+	QuadTreePtr mQuadTree;
 
 	double mFoodSpawnTimer = 0;
 	uint32_t mFoodCounter = 0;
@@ -105,7 +106,7 @@ private:
 
 	void checkCollisions(double timediff);
 
-	void doIntersect(ElementPtr e1, ElementPtr e2);
+	void doIntersect(QuadTreeNodePtr e1, QuadTreeNodePtr e2);
 
 	ElementPtr createFood();
 

@@ -49,6 +49,7 @@ void MoveableElement::update(double timediff) {
 						  mGamefield->getOptions().width);
 		mPosition.y = min(max(mPosition.y + (mVelocity.y + mBoostVelocity.y) * timediff, 0.),
 						  mGamefield->getOptions().height);
+		updateRegion();
 	}
 }
 

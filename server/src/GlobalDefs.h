@@ -10,6 +10,9 @@
 #include <assert.h>
 
 using std::function;
+using std::shared_ptr;
+using std::unique_ptr;
+using std::make_shared;
 
 #include <list>
 #include <vector>
@@ -53,7 +56,10 @@ typedef std::shared_ptr<Ball> BallPtr;
 class Shoot;
 typedef std::shared_ptr<Shoot> ShootPtr;
 
-
+class QuadTree;
+typedef std::shared_ptr<QuadTree> QuadTreePtr;
+class QuadTreeNode;
+typedef std::shared_ptr<QuadTreeNode> QuadTreeNodePtr;
 
 
 #endif //AGARIO_GLOBALDEFS_H

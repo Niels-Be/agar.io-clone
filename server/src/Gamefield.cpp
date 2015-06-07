@@ -12,6 +12,7 @@
 #include "Network/Client.h"
 #include "Network/Server.h"
 #include "Network/AgarPackets.h"
+#include "QuadTree.h"
 
 #include <thread>
 
@@ -20,7 +21,7 @@ using std::placeholders::_2;
 
 Gamefield::Gamefield(ServerPtr server) : mServer(server) {
 	mServer->setOnConnected(std::bind(&Gamefield::onConnected, this, _1));
-
+	mQuadTree = make_shared<QuadTree>(Vector(0,0), Vector(mOptions.width,  mOptions.height), std::bind(&Gamefield::doIntersect, this, _1, _2));
 }
 
 
@@ -34,6 +35,7 @@ BallPtr Gamefield::createBall(PlayerPtr player) {
 	BallPtr b = std::make_shared<Ball>(shared_from_this(), mElementIds++, generatePos(), player);
 	mElements.push_back(b);
 	mNewElements.push_back(b);
+	mQuadTree->add(b);
 	return b;
 }
 
@@ -41,11 +43,12 @@ ShootPtr Gamefield::createShoot(const Vector& pos, const String& color, const Ve
 	ShootPtr s = std::make_shared<Shoot>(shared_from_this(), mElementIds++, pos, color, direction);
 	mElements.push_back(s);
 	mNewElements.push_back(s);
+	mQuadTree->add(s);
 	return s;
 }
 
 void Gamefield::destroyElement(ElementPtr elem) {
-	elem->mDeleted = true;
+	elem->markDeleted();
 	mDeletedElements.push_back(elem);
 
 	if (elem->getType() == ET_Ball) {
@@ -70,6 +73,7 @@ Vector Gamefield::generatePos() {
 
 
 void Gamefield::_destroyElement(ElementPtr elem) {
+	mQuadTree->remove(elem);
 	//Find element
 	auto it = mElements.begin();
 	while (it != mElements.end()) {
@@ -92,7 +96,7 @@ void Gamefield::startUpdater() {
 		mUpdaterThread.join();
 		printf(" Done\n");
 	}
-	for(uint i = 0; i < mOptions.food.max/2; i++)
+	while(mFoodCounter < mOptions.food.max)
 		createFood();
 
 	printf("Creating new thread\n");
@@ -104,7 +108,7 @@ void Gamefield::updateLoop() {
 	using timer=std::chrono::high_resolution_clock;
 
 	mUpdaterRunning = true;
-	timer::duration fps(microseconds((uint64_t)(1e6 /  60)));
+	timer::duration fps(microseconds((uint64_t)(1e6 /  30)));
 
 	printf("Updater started %lf\n",  duration_cast<duration<double, std::milli> >(fps).count());
 
@@ -148,7 +152,8 @@ void Gamefield::update(double timediff) {
 
 	timer::duration timerUpdate = timer::now().time_since_epoch() - timerStart;
 
-	checkCollisions(timediff);
+	//checkCollisions(timediff);
+	mQuadTree->doCollisionCheck();
 
 	timer::duration timerCollision = timer::now().time_since_epoch() - timerUpdate - timerStart;
 
@@ -170,7 +175,7 @@ void Gamefield::update(double timediff) {
 
 	//Send updated data
 	mElementUpdateTimer+=timediff;
-	if(mElementUpdateTimer > 2) {
+	if(mElementUpdateTimer > 1) {
 		sendToAll(std::make_shared<SetElementsPacket>(mElements));
 		mElementUpdateTimer = 0;
 	}
@@ -254,10 +259,10 @@ void Gamefield::checkCollisions(double timediff) {
 	for (size_t i = 0; i < mElements.size(); i++) {
 		ElementPtr e1 = mElements[i];
 		if(e1->getType() == ET_Food) continue;
-		//Start at i because we already checked elements before
+		//Start at i + 1 because we already checked elements before
 		for (size_t j = 0; j < mElements.size(); j++) {
 			ElementPtr e2 = mElements[j];
-			if (e1->getId() == e2->getId() || e2->isDeleted() || e1->isDeleted())
+			if (/*e1->getId() == e2->getId() || */e2->isDeleted() || e1->isDeleted())
 				continue;
 			if (e1->intersect(e2)) {
 				doIntersect(e1, e2);
@@ -267,7 +272,9 @@ void Gamefield::checkCollisions(double timediff) {
 }
 
 
-void Gamefield::doIntersect(ElementPtr e1, ElementPtr e2) {
+void Gamefield::doIntersect(QuadTreeNodePtr ne1, QuadTreeNodePtr ne2) {
+	ElementPtr e1(std::dynamic_pointer_cast<Element>(ne1));
+	ElementPtr e2(std::dynamic_pointer_cast<Element>(ne2));
 	if (e1->tryEat(e2)) {
 
 	} else if (e2->tryEat(e1)) {
@@ -279,6 +286,7 @@ ElementPtr Gamefield::createFood() {
 	ElementPtr f = std::make_shared<Food>(shared_from_this(), mElementIds++, generatePos());
 	mElements.push_back(f);
 	mNewElements.push_back(f);
+	mQuadTree->add(f);
 	mFoodCounter++;
 	return f;
 }
@@ -287,6 +295,7 @@ ElementPtr Gamefield::createObstracle() {
 	ElementPtr o = std::make_shared<Obstracle>(shared_from_this(), mElementIds++, generatePos());
 	mElements.push_back(o);
 	mNewElements.push_back(o);
+	mQuadTree->add(o);
 	mObstracleCounter++;
 	return o;
 }

@@ -7,6 +7,7 @@
 
 #include "GlobalDefs.h"
 #include "Vector.h"
+#include "QuadTree.h"
 
 enum ElementType : int8_t {
 	ET_Ball,
@@ -43,25 +44,23 @@ struct ElementUpdateData {
 	double velY;
 };
 
-class Element : public std::enable_shared_from_this<Element> {
-	friend class Gamefield;
+class Element : public QuadTreeNode {
+	//friend class Gamefield;
 
 protected:
 	GamefieldPtr mGamefield;
 	uint32_t mId;
-	Vector mPosition;
 	String mColor;
-	double mSize;
 	uint32_t mMass;
 
 private:
 	bool mHasChanged = false;
-	bool mDeleted = false;
 
 public:
 	Element(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, const String& mColor, double mSize,
 			uint32_t mMass = 0) :
-			mGamefield(mGamefield), mId(mId), mPosition(mPosition), mColor(mColor), mSize(mSize), mMass(mMass) { }
+			QuadTreeNode(mPosition, mSize),
+			mGamefield(mGamefield), mId(mId), mColor(mColor), mMass(mMass) { }
 	virtual ~Element() {}
 
 
@@ -73,19 +72,13 @@ public:
 		mSize = size;
 	}
 
-	double getSize() const { return mSize; }
-
-	virtual void setMass(int32_t mass) { mMass = mass; changed(); }
+	virtual void setMass(uint32_t mass) { mMass = mass; changed(); }
 
 	void addMass(int32_t mass) { setMass(mMass + mass); }
 
 	uint32_t getMass() const { return mMass; }
 
-	const Vector& getPosition() const { return mPosition; }
-
 	virtual double getSpeed() const { return 0; }
-
-	bool intersect(ElementPtr other);
 
 	virtual void update(double /*timediff*/) { mHasChanged = false; }
 
@@ -99,7 +92,6 @@ public:
 
 	bool hasChanged() const { return mHasChanged; }
 
-	bool isDeleted() const { return mDeleted; }
 };
 
 

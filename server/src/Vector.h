@@ -122,19 +122,19 @@ public:
 		return v;
 	}
 
-	double length() const {
+	inline double length() const {
 		return sqrt(x * x + y * y);
 	}
 
-	double lengthSquared() const {
+	inline double lengthSquared() const {
 		return x * x + y * y;
 	}
 
-	double distance(const Vector& other) const {
+	inline double distance(const Vector& other) const {
 		return sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
 	}
 
-	double distanceSquared(const Vector& other) const {
+	inline double distanceSquared(const Vector& other) const {
 		return (x - other.x) * (x - other.x) + (y - other.y) * (y - other.y);
 	}
 
