@@ -7,7 +7,7 @@
 QuadTree::QuadTree(const Vector& mPosition, const Vector& mSize, std::function<void(QuadTreeNodePtr, QuadTreeNodePtr)> mCollisionCallback, size_t mMaxAmount, QuadTreePtr mParent)  :
 		mParent(mParent), mPosition(mPosition), mSize(mSize), mMaxAmount(mMaxAmount), mCollisionCallback(mCollisionCallback)
 {
-	printf("Created Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
+	//printf("Created Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
 	mElements.reserve(mMaxAmount);
 }
 
@@ -52,7 +52,7 @@ bool QuadTree::add(QuadTreeNodePtr elem) {
 			if(!elem->mRegion.expired())
 				elem->mRegion.lock()->remove(elem);
 			elem->mRegion = shared_from_this();
-			printf("Added to Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
+			//printf("Added to Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
 		} else { // No space left
 			if(mIsLeaf)
 				split();
@@ -63,7 +63,7 @@ bool QuadTree::add(QuadTreeNodePtr elem) {
 				if(!elem->mRegion.expired())
 					elem->mRegion.lock()->remove(elem);
 				elem->mRegion = shared_from_this();
-				printf("Added to own Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
+				//printf("Added to own Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
 			}
 		}
 		return true;

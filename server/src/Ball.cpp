@@ -46,7 +46,7 @@ ShootPtr Ball::shoot(const Vector& direction) {
 	return b;
 }
 
-void Ball::setMass(int32_t mass) {
+void Ball::setMass(uint32_t mass) {
 	mSize = mGamefield->getOptions().player.defaultSize + 150.0 * log((mass + 150.0) / 150.0);
 	mMaxSpeed = mGamefield->getOptions().player.maxSpeed * exp(-mGamefield->getOptions().player.speedPenalty * mass);
 	Element::setMass(mass);
@@ -54,7 +54,7 @@ void Ball::setMass(int32_t mass) {
 
 bool Ball::tryEat(ElementPtr other) {
 	if (other->getMass() > 0 && other->getSize() * mGamefield->getOptions().player.eatFactor < mSize) {
-		addMass(other->getMass());
+		this->addMass(other->getMass());
 		mGamefield->destroyElement(other);
 		mPlayer->updateClient();
 		return true;

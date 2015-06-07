@@ -68,9 +68,7 @@ public:
 
 	virtual bool tryEat(ElementPtr other) { return false; }
 
-	void setSize(double size) {
-		mSize = size;
-	}
+	void setSize(double size) {	mSize = size; }
 
 	virtual void setMass(uint32_t mass) { mMass = mass; changed(); }
 

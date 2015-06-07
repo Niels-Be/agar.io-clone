@@ -21,7 +21,7 @@ public:
 
 	const PlayerPtr& getPlayer() const { return mPlayer; }
 
-	virtual void setMass(int32_t mass);
+	virtual void setMass(uint32_t mass);
 
 	virtual bool tryEat(ElementPtr ptr);
 
