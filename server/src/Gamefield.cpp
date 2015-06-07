@@ -21,7 +21,8 @@ using std::placeholders::_2;
 
 Gamefield::Gamefield(ServerPtr server) : mServer(server) {
 	mServer->setOnConnected(std::bind(&Gamefield::onConnected, this, _1));
-	mQuadTree = make_shared<QuadTree>(Vector(0,0), Vector(mOptions.width,  mOptions.height), std::bind(&Gamefield::doIntersect, this, _1, _2));
+	//mQuadTree = make_shared<QuadTree>(Vector(0,0), Vector(mOptions.width,  mOptions.height), std::bind(&Gamefield::doIntersect, this, _1, _2));
+	mQuadTree = new QuadTree(Vector(0,0), Vector(mOptions.width,  mOptions.height), std::bind(&Gamefield::doIntersect, this, _1, _2));
 }
 
 
@@ -32,18 +33,18 @@ Gamefield::~Gamefield() {
 }
 
 BallPtr Gamefield::createBall(PlayerPtr player, const Vector& position) {
-	BallPtr b = std::make_shared<Ball>(shared_from_this(), mElementIds++, position, player);
+	BallPtr b = make_shared<Ball>(shared_from_this(), mElementIds++, position, player);
 	mElements.push_back(b);
 	mNewElements.push_back(b);
-	mQuadTree->add(b);
+	mQuadTree->add(b.get());
 	return b;
 }
 
 ShootPtr Gamefield::createShoot(const Vector& pos, const String& color, const Vector& direction) {
-	ShootPtr s = std::make_shared<Shoot>(shared_from_this(), mElementIds++, pos, color, direction);
+	ShootPtr s = make_shared<Shoot>(shared_from_this(), mElementIds++, pos, color, direction);
 	mElements.push_back(s);
 	mNewElements.push_back(s);
-	mQuadTree->add(s);
+	mQuadTree->add(s.get());
 	return s;
 }
 
@@ -73,7 +74,7 @@ Vector Gamefield::generatePos() {
 
 
 void Gamefield::_destroyElement(ElementPtr elem) {
-	mQuadTree->remove(elem);
+	mQuadTree->remove(elem.get());
 	//Find element
 	auto it = mElements.begin();
 	while (it != mElements.end()) {
@@ -152,8 +153,8 @@ void Gamefield::update(double timediff) {
 
 	timer::duration timerUpdate = timer::now().time_since_epoch() - timerStart;
 
-	//checkCollisions(timediff);
-	mQuadTree->doCollisionCheck();
+	checkCollisions(timediff);
+	//mQuadTree->doCollisionCheck();
 
 	timer::duration timerCollision = timer::now().time_since_epoch() - timerUpdate - timerStart;
 
@@ -176,11 +177,11 @@ void Gamefield::update(double timediff) {
 	//Send updated data
 	mElementUpdateTimer+=timediff;
 	if(mElementUpdateTimer > 1) {
-		sendToAll(std::make_shared<SetElementsPacket>(mElements));
+		sendToAll(make_shared<SetElementsPacket>(mElements));
 		mElementUpdateTimer = 0;
 	}
 	else if(mNewElements.size() + mDeletedElements.size() + changed.size() > 0) {
-		sendToAll(std::make_shared<UpdateElementsPacket>(mNewElements, mDeletedElements, changed));
+		sendToAll(make_shared<UpdateElementsPacket>(mNewElements, mDeletedElements, changed));
 		//printf("Sending Update %ld\n", mElements.size());
 	}
 
@@ -257,12 +258,13 @@ void Gamefield::checkCollisions(double timediff) {
 */
 	//Check collisions
 	for (size_t i = 0; i < mElements.size(); i++) {
-		ElementPtr e1 = mElements[i];
+		Element* e1 = mElements[i].get();
+		if(e1->isDeleted()) continue;
 		if(e1->getType() == ET_Food) continue;
 		//Start at i + 1 because we already checked elements before
 		for (size_t j = 0; j < mElements.size(); j++) {
-			ElementPtr e2 = mElements[j];
-			if (/*e1->getId() == e2->getId() || */e2->isDeleted() || e1->isDeleted())
+			Element* e2 = mElements[j].get();
+			if (e1->getId() == e2->getId() || e2->isDeleted())
 				continue;
 			if (e1->intersect(e2)) {
 				doIntersect(e1, e2);
@@ -273,8 +275,8 @@ void Gamefield::checkCollisions(double timediff) {
 
 
 void Gamefield::doIntersect(QuadTreeNodePtr ne1, QuadTreeNodePtr ne2) {
-	ElementPtr e1(std::dynamic_pointer_cast<Element>(ne1));
-	ElementPtr e2(std::dynamic_pointer_cast<Element>(ne2));
+	ElementPtr e1(std::dynamic_pointer_cast<Element>(ne1->shared_from_this()));
+	ElementPtr e2(std::dynamic_pointer_cast<Element>(ne2->shared_from_this()));
 	if (e1->tryEat(e2)) {
 
 	} else if (e2->tryEat(e1)) {
@@ -286,7 +288,7 @@ ElementPtr Gamefield::createFood() {
 	ElementPtr f = std::make_shared<Food>(shared_from_this(), mElementIds++, generatePos());
 	mElements.push_back(f);
 	mNewElements.push_back(f);
-	mQuadTree->add(f);
+	mQuadTree->add(f.get());
 	mFoodCounter++;
 	return f;
 }
@@ -295,7 +297,7 @@ ElementPtr Gamefield::createObstracle() {
 	ElementPtr o = std::make_shared<Obstracle>(shared_from_this(), mElementIds++, generatePos());
 	mElements.push_back(o);
 	mNewElements.push_back(o);
-	mQuadTree->add(o);
+	mQuadTree->add(o.get());
 	mObstracleCounter++;
 	return o;
 }

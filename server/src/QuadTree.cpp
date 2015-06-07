@@ -11,14 +11,20 @@ QuadTree::QuadTree(const Vector& mPosition, const Vector& mSize, std::function<v
 	mElements.reserve(mMaxAmount);
 }
 
-void QuadTree::doCollisionCheck() const {
+void QuadTree::doCollisionCheck() {
 	list<QuadTreePtr> neighbours = getNeighbours();
-	for(size_t i = 0; i < mElements.size(); i++) {
-		QuadTreeNodePtr e1 = mElements[i];
+	vector<QuadTreeNodePtr> oldList;
+	{
+		lock_guard<mutex> _lock(mMutex);
+		oldList = mElements;
+	}
+
+	for(size_t i = 0; i < oldList.size(); i++) {
+		QuadTreeNodePtr e1 = oldList[i];
 		if(e1->isDeleted()) continue;
 		//Start at i + 1 because we already checked these before
-		for(size_t j = i + 1; j < mElements.size(); j++) {
-			QuadTreeNodePtr e2 = mElements[j];
+		for(size_t j = i + 1; j < oldList.size(); j++) {
+			QuadTreeNodePtr e2 = oldList[j];
 			if(e2->isDeleted()) continue;
 			if(e1->intersect(e2)) {
 				mCollisionCallback(e1, e2);
@@ -46,12 +52,15 @@ void QuadTree::doCollisionCheck() const {
 }
 
 bool QuadTree::add(QuadTreeNodePtr elem) {
-	if(isInside(elem->getPosition()) && min(mSize.x, mSize.y) > elem->getSize()) { //Contains point and fits inside
+	if(isInside(elem)) { //Contains point and fits inside
 		if(mIsLeaf && mElements.size() < mMaxAmount) { //Still some space left
-			mElements.push_back(elem);
-			if(!elem->mRegion.expired())
-				elem->mRegion.lock()->remove(elem);
-			elem->mRegion = shared_from_this();
+			{
+				lock_guard<mutex> _lock(mMutex);
+				mElements.push_back(elem);
+			}
+			if(elem->mRegion)
+				elem->mRegion->remove(elem);
+			elem->mRegion = this;
 			//printf("Added to Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
 		} else { // No space left
 			if(mIsLeaf)
@@ -59,10 +68,13 @@ bool QuadTree::add(QuadTreeNodePtr elem) {
 			//Try to add it to a child
 			if(!(mChilds[0]->add(elem) || mChilds[1]->add(elem) || mChilds[2]->add(elem) || mChilds[3]->add(elem))) {
 				//Otherwise add it to this node anyway (it is probably to big for the children)
-				mElements.push_back(elem);
-				if(!elem->mRegion.expired())
-					elem->mRegion.lock()->remove(elem);
-				elem->mRegion = shared_from_this();
+				{
+					lock_guard<mutex> _lock(mMutex);
+					mElements.push_back(elem);
+				}
+				if(elem->mRegion)
+					elem->mRegion->remove(elem);
+				elem->mRegion = this;
 				//printf("Added to own Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
 			}
 		}
@@ -72,7 +84,7 @@ bool QuadTree::add(QuadTreeNodePtr elem) {
 }
 
 bool QuadTree::remove(QuadTreeNodePtr elem) {
-	if(isInside(elem->getPosition())) {
+	if(isInside(elem)) {
 		auto it = mElements.begin();
 		while (it != mElements.end()) {
 			if (*it == elem)
@@ -80,6 +92,7 @@ bool QuadTree::remove(QuadTreeNodePtr elem) {
 			it++;
 		}
 		if (it != mElements.end()) {
+			lock_guard<mutex> _lock(mMutex);
 			*it = mElements.back();
 			mElements.pop_back();
 			return true;
@@ -94,10 +107,16 @@ bool QuadTree::remove(QuadTreeNodePtr elem) {
 	return false;
 }
 
-void QuadTree::checkCollision(QuadTreeNodePtr e1) const {
+
+void QuadTree::checkCollision(QuadTreeNodePtr e1) {
 	if(intersects(e1)) { //Only check if the element actually intersects this area
+		vector<QuadTreeNodePtr> oldList;
+		{
+			lock_guard<mutex> _lock(mMutex);
+			oldList = mElements;
+		}
 		//Compare with own elements
-		for(QuadTreeNodePtr e2 : mElements) {
+		for(QuadTreeNodePtr e2 : oldList) {
 			if(e2->isDeleted()) continue;
 			if(e1->intersect(e2)) {
 				mCollisionCallback(e1, e2);
@@ -115,15 +134,24 @@ void QuadTree::checkCollision(QuadTreeNodePtr e1) const {
 
 void QuadTree::split() {
 	if(mIsLeaf) {
-		mChilds[NW] = make_shared<QuadTree>(mPosition, mSize/2, mCollisionCallback, mMaxAmount, shared_from_this());
-		mChilds[NE] = make_shared<QuadTree>(mPosition + Vector(mSize.x/2, 0), mSize/2, mCollisionCallback, mMaxAmount, shared_from_this());
-		mChilds[SW] = make_shared<QuadTree>(mPosition + Vector(0, mSize.y/2), mSize/2, mCollisionCallback, mMaxAmount, shared_from_this());
-		mChilds[SE] = make_shared<QuadTree>(mPosition + mSize/2, mSize/2, mCollisionCallback, mMaxAmount, shared_from_this());
+		//mChilds[NW] = make_shared<QuadTree>(mPosition, mSize/2, mCollisionCallback, mMaxAmount, shared_from_this());
+		//mChilds[NE] = make_shared<QuadTree>(mPosition + Vector(mSize.x/2, 0), mSize/2, mCollisionCallback, mMaxAmount, shared_from_this());
+		//mChilds[SW] = make_shared<QuadTree>(mPosition + Vector(0, mSize.y/2), mSize/2, mCollisionCallback, mMaxAmount, shared_from_this());
+		//mChilds[SE] = make_shared<QuadTree>(mPosition + mSize/2, mSize/2, mCollisionCallback, mMaxAmount, shared_from_this());
+		mChilds[NW] = new QuadTree(mPosition, mSize/2, mCollisionCallback, mMaxAmount, this);
+		mChilds[NE] = new QuadTree(mPosition + Vector(mSize.x/2, 0), mSize/2, mCollisionCallback, mMaxAmount, this);
+		mChilds[SW] = new QuadTree(mPosition + Vector(0, mSize.y/2), mSize/2, mCollisionCallback, mMaxAmount, this);
+		mChilds[SE] = new QuadTree(mPosition + mSize/2, mSize/2, mCollisionCallback, mMaxAmount, this);
 
-		vector<QuadTreeNodePtr> oldList = mElements;
-		mElements.clear();
+		vector<QuadTreeNodePtr> oldList;
+		{
+			lock_guard<mutex> _lock(mMutex);
+			oldList = std::move(mElements);
+			mElements.clear();
+		}
 		for(QuadTreeNodePtr elem : oldList) {
 			if(!(mChilds[0]->add(elem) || mChilds[1]->add(elem) || mChilds[2]->add(elem) || mChilds[3]->add(elem))) {
+				lock_guard<mutex> _lock(mMutex);
 				mElements.push_back(elem);
 			}
 		}
@@ -131,26 +159,27 @@ void QuadTree::split() {
 	}
 }
 
-bool QuadTree::isInside(const Vector& p) const {
-	return p.x > mPosition.x && p.x < mPosition.x+mSize.x &&
-		   p.y > mPosition.y && p.y < mPosition.y+mSize.y;
+bool QuadTree::isInside(QuadTreeNodePtr a) const {
+	return a->getPosition().x >= mPosition.x && a->getPosition().x <= mPosition.x+mSize.x &&
+		   a->getPosition().y >= mPosition.y && a->getPosition().y <= mPosition.y+mSize.y &&
+		   min(mSize.x, mSize.y) >= a->getSize();
 }
 
 bool QuadTree::intersects(QuadTreeNodePtr a) const {
-	return  a->getPosition().x+a->getSize() > mPosition.x && a->getPosition().x-a->getSize() < mPosition.x+mSize.x &&
-			a->getPosition().y+a->getSize() > mPosition.y && a->getPosition().y-a->getSize() < mPosition.y+mSize.y;
+	return  a->getPosition().x+a->getSize() >= mPosition.x && a->getPosition().x-a->getSize() <= mPosition.x+mSize.x &&
+			a->getPosition().y+a->getSize() >= mPosition.y && a->getPosition().y-a->getSize() <= mPosition.y+mSize.y;
 }
 
 
 QuadTreePtr QuadTree::findNorth() const {
 	if (mParent) //it is not the head of the tree
 	{
-		if (shared_from_this() == mParent->mChilds[SE]) return mParent->mChilds[NE];
-		if (shared_from_this() == mParent->mChilds[SW]) return mParent->mChilds[NW];
+		if (this == mParent->mChilds[SE]) return mParent->mChilds[NE];
+		if (this == mParent->mChilds[SW]) return mParent->mChilds[NW];
 		QuadTreePtr n = mParent->findNorth();
 		if(n) {
 			if (n->mIsLeaf) return n;
-			else if (shared_from_this() == mParent->mChilds[NE]) return n->mChilds[SE];
+			else if (this == mParent->mChilds[NE]) return n->mChilds[SE];
 			else return n->mChilds[SW];
 		}
 	}
@@ -160,12 +189,12 @@ QuadTreePtr QuadTree::findNorth() const {
 QuadTreePtr QuadTree::findSouth() const {
 	if (mParent) //it is not the head of the tree
 	{
-		if (shared_from_this() == mParent->mChilds[NE]) return mParent->mChilds[SE];
-		if (shared_from_this() == mParent->mChilds[NW]) return mParent->mChilds[SW];
+		if (this == mParent->mChilds[NE]) return mParent->mChilds[SE];
+		if (this == mParent->mChilds[NW]) return mParent->mChilds[SW];
 		QuadTreePtr n = mParent->findSouth();
 		if(n) {
 			if (n->mIsLeaf) return n;
-			else if (shared_from_this() == mParent->mChilds[SE]) return n->mChilds[NE];
+			else if (this == mParent->mChilds[SE]) return n->mChilds[NE];
 			else return n->mChilds[NW];
 		}
 	}
@@ -175,12 +204,12 @@ QuadTreePtr QuadTree::findSouth() const {
 QuadTreePtr QuadTree::findEast() const {
 	if (mParent) //it is not the head of the tree
 	{
-		if (shared_from_this() == mParent->mChilds[NW]) return mParent->mChilds[NE];
-		if (shared_from_this() == mParent->mChilds[SW]) return mParent->mChilds[SE];
+		if (this == mParent->mChilds[NW]) return mParent->mChilds[NE];
+		if (this == mParent->mChilds[SW]) return mParent->mChilds[SE];
 		QuadTreePtr n = mParent->findEast();
 		if(n) {
 			if (n->mIsLeaf) return n;
-			else if (shared_from_this() == mParent->mChilds[NE]) return n->mChilds[NW];
+			else if (this == mParent->mChilds[NE]) return n->mChilds[NW];
 			else return n->mChilds[SW];
 		}
 	}
@@ -190,12 +219,12 @@ QuadTreePtr QuadTree::findEast() const {
 QuadTreePtr QuadTree::findWest() const {
 	if (mParent) //it is not the head of the tree
 	{
-		if (shared_from_this() == mParent->mChilds[NE]) return mParent->mChilds[NW];
-		if (shared_from_this() == mParent->mChilds[SE]) return mParent->mChilds[SW];
+		if (this == mParent->mChilds[NE]) return mParent->mChilds[NW];
+		if (this == mParent->mChilds[SE]) return mParent->mChilds[SW];
 		QuadTreePtr n = mParent->findWest();
 		if(n) {
 			if (n->mIsLeaf) return n;
-			else if (shared_from_this() == mParent->mChilds[NW]) return n->mChilds[NE];
+			else if (this == mParent->mChilds[NW]) return n->mChilds[NE];
 			else return n->mChilds[SE];
 		}
 	}
@@ -249,13 +278,15 @@ list<QuadTreePtr> QuadTree::getNeighbours() const {
 
 void QuadTreeNode::updateRegion() {
 	//if(mRegion.expired()) return;
-	if(!mRegion.lock()->isInside(mPosition)) {
-		list<QuadTreePtr> regions = mRegion.lock()->getNeighbours();
+	//if(!mRegion->isInside(this)) {
+		/*list<QuadTreePtr> regions = mRegion->getNeighbours();
 		for (QuadTreePtr region : regions) {
-			if (region->add(shared_from_this()))
+			if (region->add(this))
 				return;
 		}
 		//Should never appear
 		fprintf(stderr, "Can not find Region for position %.0lf, %.0lf\n", mPosition.x, mPosition.y);
-	}
+		 */
+		//mRegion->getTop()->add(this);
+	//}
 }

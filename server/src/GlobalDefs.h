@@ -8,11 +8,15 @@
 #include <memory>
 #include <functional>
 #include <assert.h>
+#include <mutex>
 
 using std::function;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::make_shared;
+using std::mutex;
+using std::unique_lock;
+using std::lock_guard;
 
 #include <list>
 #include <vector>
@@ -57,9 +61,11 @@ class Shoot;
 typedef std::shared_ptr<Shoot> ShootPtr;
 
 class QuadTree;
-typedef std::shared_ptr<QuadTree> QuadTreePtr;
+//typedef std::shared_ptr<QuadTree> QuadTreePtr;
+typedef QuadTree* QuadTreePtr;
 class QuadTreeNode;
-typedef std::shared_ptr<QuadTreeNode> QuadTreeNodePtr;
+//typedef std::shared_ptr<QuadTreeNode> QuadTreeNodePtr;
+typedef QuadTreeNode* QuadTreeNodePtr;
 
 
 #endif //AGARIO_GLOBALDEFS_H

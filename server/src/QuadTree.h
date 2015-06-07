@@ -12,14 +12,14 @@ class QuadTreeNode : public std::enable_shared_from_this<QuadTreeNode> {
 friend class QuadTree;
 protected:
 	Vector mPosition;
-	double mSize;
+	double mSize = 0;
 
 private:
-	std::weak_ptr<QuadTree> mRegion;
+	QuadTree* mRegion = NULL;
 	bool mDeleted = false;
 
 public:
-	QuadTreeNode() : mSize(0) {}
+	QuadTreeNode() {}
 	QuadTreeNode(const Vector& mPosition, double mSize) : mPosition(mPosition), mSize(mSize) { }
 
 	virtual ~QuadTreeNode() {}
@@ -48,7 +48,7 @@ private:
 		SE
 	};
 private:
-	QuadTreePtr mParent;
+	QuadTreePtr mParent = NULL;
 	Vector mPosition;
 	Vector mSize;
 	size_t mMaxAmount;
@@ -56,22 +56,26 @@ private:
 	std::function<void (QuadTreeNodePtr, QuadTreeNodePtr)> mCollisionCallback;
 	vector<QuadTreeNodePtr> mElements;
 	QuadTreePtr mChilds[4];
-	bool mIsLeaf = true;
+	volatile bool mIsLeaf = true;
+
+	mutex mMutex;
 
 public:
 	QuadTree(const Vector& mPosition, const Vector& mSize, std::function<void (QuadTreeNodePtr, QuadTreeNodePtr)> mCollisionCallback, size_t mMaxAmount = 5, QuadTreePtr mParent = QuadTreePtr());
 
-	void doCollisionCheck() const;
+	void doCollisionCheck();
 	bool add(QuadTreeNodePtr elem);
 	bool remove(QuadTreeNodePtr elem);
 
 private:
 
-	void checkCollision(QuadTreeNodePtr elem) const;
+	QuadTreePtr getTop() { return mParent ? mParent->getTop() : this; }
+
+	void checkCollision(QuadTreeNodePtr elem);
 	void split();
 
-	bool isInside(const Vector& point) const;
-	bool intersects(QuadTreeNodePtr) const;
+	bool isInside(QuadTreeNodePtr elem) const;
+	bool intersects(QuadTreeNodePtr elem) const;
 
 	QuadTreePtr findNorth() const;
 	QuadTreePtr findSouth() const;
