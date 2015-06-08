@@ -20,11 +20,11 @@ void QuadTree::doCollisionCheck() {
 	}
 
 	for(size_t i = 0; i < oldList.size(); i++) {
-		QuadTreeNodePtr e1 = oldList[i];
+		QuadTreeNodePtr& e1 = oldList[i];
 		if(e1->isDeleted()) continue;
 		//Start at i + 1 because we already checked these before
 		for(size_t j = i + 1; j < oldList.size(); j++) {
-			QuadTreeNodePtr e2 = oldList[j];
+			QuadTreeNodePtr& e2 = oldList[j];
 			if(e2->isDeleted()) continue;
 			if(e1->intersect(e2)) {
 				mCollisionCallback(e1, e2);
@@ -38,7 +38,7 @@ void QuadTree::doCollisionCheck() {
 			mChilds[3]->checkCollision(e1);
 		}
 		//Pass to neighbours
-		for(QuadTreePtr qt : neighbours)
+		for(QuadTreePtr& qt : neighbours)
 			qt->checkCollision(e1);
 	}
 
@@ -149,7 +149,7 @@ void QuadTree::split() {
 			oldList = std::move(mElements);
 			mElements.clear();
 		}
-		for(QuadTreeNodePtr elem : oldList) {
+		for(QuadTreeNodePtr& elem : oldList) {
 			if(!(mChilds[0]->add(elem) || mChilds[1]->add(elem) || mChilds[2]->add(elem) || mChilds[3]->add(elem))) {
 				lock_guard<mutex> _lock(mMutex);
 				mElements.push_back(elem);
@@ -278,15 +278,16 @@ list<QuadTreePtr> QuadTree::getNeighbours() const {
 
 void QuadTreeNode::updateRegion() {
 	//if(mRegion.expired()) return;
-	//if(!mRegion->isInside(this)) {
-		/*list<QuadTreePtr> regions = mRegion->getNeighbours();
+	if(!mRegion->isInside(this)) {
+		/* //Does not work because the ball may skip regions in a lag
+		list<QuadTreePtr> regions = mRegion->getNeighbours();
 		for (QuadTreePtr region : regions) {
 			if (region->add(this))
 				return;
+		}*/
+		if(!mRegion->getHead()->add(this)) {
+			//Should never appear
+			fprintf(stderr, "Can not find Region for position %.0lf, %.0lf\n", mPosition.x, mPosition.y);
 		}
-		//Should never appear
-		fprintf(stderr, "Can not find Region for position %.0lf, %.0lf\n", mPosition.x, mPosition.y);
-		 */
-		//mRegion->getTop()->add(this);
-	//}
+	}
 }

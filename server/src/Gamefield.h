@@ -71,26 +71,29 @@ private:
 	QuadTreePtr mQuadTree;
 
 	double mFoodSpawnTimer = 0;
-	uint32_t mFoodCounter = 0;
+	volatile uint32_t mFoodCounter = 0;
 	double mObstracleSpawnTimer = 0;
-	uint32_t mObstracleCounter = 0;
+	volatile uint32_t mObstracleCounter = 0;
 
 	double mElementUpdateTimer = 0;
 	volatile bool mUpdaterRunning = false;
 	std::thread mUpdaterThread;
 
 	FPSControl mFPSControl;
+	mutex mMutexElements;
+	mutex mMutexNewElements;
+	mutex mMutexDeletedElements;
 
 public:
 	Gamefield(ServerPtr server);
 	~Gamefield();
 
-	BallPtr createBall(PlayerPtr player) { return createBall(player, generatePos()); }
-	BallPtr createBall(PlayerPtr player, const Vector& position);
+	BallPtr createBall(PlayerPtr const&  player) { return createBall(player, generatePos()); }
+	BallPtr createBall(PlayerPtr const&  player, const Vector& position);
 
 	ShootPtr createShoot(const Vector& pos, const String& color, const Vector& direction);
 
-	void destroyElement(ElementPtr elem);
+	void destroyElement(ElementPtr const&  elem);
 
 	void sendToAll(PacketPtr packet);
 
@@ -98,7 +101,7 @@ public:
 
 private:
 	Vector generatePos();
-	void _destroyElement(ElementPtr elem);
+	void _destroyElement(ElementPtr const&  elem);
 
 	void startUpdater();
 	void updateLoop();
@@ -112,6 +115,7 @@ private:
 	ElementPtr createFood();
 
 	ElementPtr createObstracle();
+	void addElement(ElementPtr const& elem);
 
 	void onConnected(ClientPtr client);
 	void onDisconnected(ClientPtr client);

@@ -69,7 +69,7 @@ public:
 
 private:
 
-	QuadTreePtr getTop() { return mParent ? mParent->getTop() : this; }
+	QuadTreePtr getHead() { return mParent ? mParent->getHead() : this; }
 
 	void checkCollision(QuadTreeNodePtr elem);
 	void split();

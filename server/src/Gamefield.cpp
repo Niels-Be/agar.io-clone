@@ -32,25 +32,24 @@ Gamefield::~Gamefield() {
 		mUpdaterThread.join();
 }
 
-BallPtr Gamefield::createBall(PlayerPtr player, const Vector& position) {
+BallPtr Gamefield::createBall(PlayerPtr const&  player, const Vector& position) {
 	BallPtr b = make_shared<Ball>(shared_from_this(), mElementIds++, position, player);
-	mElements.push_back(b);
-	mNewElements.push_back(b);
-	mQuadTree->add(b.get());
+	addElement(b);
 	return b;
 }
 
 ShootPtr Gamefield::createShoot(const Vector& pos, const String& color, const Vector& direction) {
 	ShootPtr s = make_shared<Shoot>(shared_from_this(), mElementIds++, pos, color, direction);
-	mElements.push_back(s);
-	mNewElements.push_back(s);
-	mQuadTree->add(s.get());
+	addElement(s);
 	return s;
 }
 
-void Gamefield::destroyElement(ElementPtr elem) {
+void Gamefield::destroyElement(ElementPtr const&  elem) {
 	elem->markDeleted();
-	mDeletedElements.push_back(elem);
+	{
+		lock_guard<mutex> _lock(mMutexDeletedElements);
+		mDeletedElements.push_back(elem);
+	}
 
 	if (elem->getType() == ET_Ball) {
 		auto ball = std::dynamic_pointer_cast<Ball>(elem);
@@ -73,7 +72,7 @@ Vector Gamefield::generatePos() {
 }
 
 
-void Gamefield::_destroyElement(ElementPtr elem) {
+void Gamefield::_destroyElement(ElementPtr const&  elem) {
 	mQuadTree->remove(elem.get());
 	//Find element
 	auto it = mElements.begin();
@@ -83,6 +82,7 @@ void Gamefield::_destroyElement(ElementPtr elem) {
 		it++;
 	}
 	if (it != mElements.end()) {
+		lock_guard<mutex> _lock(mMutexElements);
 		//Swap with last element then pop last (no realocation needed)
 		(*it) = mElements.back();
 		mElements.pop_back();
@@ -113,26 +113,34 @@ void Gamefield::updateLoop() {
 
 	printf("Updater started %lf\n",  duration_cast<duration<double, std::milli> >(fps).count());
 
-	double timerFPS = 0;
+	try {
+		double timerFPS = 0;
 
-	timer::duration timestamp = timer::now().time_since_epoch();
-	while(mUpdaterRunning) {
-		double diff = duration_cast<microseconds>(timer::now().time_since_epoch() - timestamp).count() * 1e-6;
-		timestamp = timer::now().time_since_epoch();
-		update(diff);
+		timer::duration timestamp = timer::now().time_since_epoch();
+		while (mUpdaterRunning) {
+			double diff = duration_cast<microseconds>(timer::now().time_since_epoch() - timestamp).count() * 1e-6;
+			timestamp = timer::now().time_since_epoch();
 
-		timerFPS+=diff;
-		if(timerFPS > 1) {
-			//onGetStats(ClientPtr(), PacketPtr());
-			timerFPS = 0;
+
+			update(diff);
+
+			timerFPS += diff;
+			if (timerFPS > 1) {
+				//onGetStats(ClientPtr(), PacketPtr());
+				timerFPS = 0;
+			}
+
+			//Only sleep if timediff > 1 milli sec
+			timer::duration sleeptime = fps - (timer::now().time_since_epoch() - timestamp);
+			if (sleeptime > milliseconds(1))
+				std::this_thread::sleep_for(sleeptime);
+			else if (sleeptime < milliseconds(0))
+				printf("I am to slow !!!! %lf\n", duration_cast<duration<double, std::milli> >(sleeptime).count());
 		}
-
-		//Only sleep if timediff > 1 milli sec
-		timer::duration sleeptime = fps - (timer::now().time_since_epoch() - timestamp);
-		if(sleeptime > milliseconds(1))
-			std::this_thread::sleep_for(sleeptime);
-		else if(sleeptime < milliseconds(0))
-			printf("I am to slow !!!! %lf\n", duration_cast<duration<double, std::milli> >(sleeptime).count());
+	} catch (std::exception& e) {
+		fprintf(stderr, "ERROR: %s\n", e.what());
+	} catch (...) {
+		fprintf(stderr, "ERROR: Unkowen error occured");
 	}
 	printf("Updater Stoped\n");
 }
@@ -144,7 +152,6 @@ void Gamefield::update(double timediff) {
 	timer::duration timerStart = timer::now().time_since_epoch();
 
 	vector<ElementPtr> changed;
-	changed.reserve(mElements.size());
 	for (ElementPtr e : mElements) {
 		e->update(timediff);
 		if (e->hasChanged())
@@ -153,8 +160,8 @@ void Gamefield::update(double timediff) {
 
 	timer::duration timerUpdate = timer::now().time_since_epoch() - timerStart;
 
-	checkCollisions(timediff);
-	//mQuadTree->doCollisionCheck();
+	//checkCollisions(timediff);
+	mQuadTree->doCollisionCheck();
 
 	timer::duration timerCollision = timer::now().time_since_epoch() - timerUpdate - timerStart;
 
@@ -174,21 +181,32 @@ void Gamefield::update(double timediff) {
 		mObstracleSpawnTimer = 0;
 	}
 
+	vector<ElementPtr> tmpNew;
+	{
+		lock_guard<mutex> _lock(mMutexNewElements);
+		tmpNew = std::move(mNewElements);
+		mNewElements.clear();
+	}
+	vector<ElementPtr> tmpDeleted;
+	{
+		lock_guard<mutex> _lock(mMutexDeletedElements);
+		tmpDeleted = std::move(mDeletedElements);
+		mDeletedElements.clear();
+	}
+
 	//Send updated data
 	mElementUpdateTimer+=timediff;
 	if(mElementUpdateTimer > 1) {
 		sendToAll(make_shared<SetElementsPacket>(mElements));
 		mElementUpdateTimer = 0;
 	}
-	else if(mNewElements.size() + mDeletedElements.size() + changed.size() > 0) {
-		sendToAll(make_shared<UpdateElementsPacket>(mNewElements, mDeletedElements, changed));
+	else if(tmpNew.size() + tmpDeleted.size() + changed.size() > 0) {
+		sendToAll(make_shared<UpdateElementsPacket>(tmpNew, tmpDeleted, changed));
 		//printf("Sending Update %ld\n", mElements.size());
 	}
 
-	for(ElementPtr elem : mDeletedElements)
+	for (ElementPtr& elem : tmpDeleted)
 		_destroyElement(elem);
-	mNewElements.clear();
-	mDeletedElements.clear();
 
 	timer::duration timerOther = timer::now().time_since_epoch() - timerCollision - timerUpdate - timerStart;
 
@@ -286,22 +304,30 @@ void Gamefield::doIntersect(QuadTreeNodePtr ne1, QuadTreeNodePtr ne2) {
 
 ElementPtr Gamefield::createFood() {
 	ElementPtr f = std::make_shared<Food>(shared_from_this(), mElementIds++, generatePos());
-	mElements.push_back(f);
-	mNewElements.push_back(f);
-	mQuadTree->add(f.get());
+	addElement(f);
 	mFoodCounter++;
 	return f;
 }
 
 ElementPtr Gamefield::createObstracle() {
 	ElementPtr o = std::make_shared<Obstracle>(shared_from_this(), mElementIds++, generatePos());
-	mElements.push_back(o);
-	mNewElements.push_back(o);
-	mQuadTree->add(o.get());
+	addElement(o);
 	mObstracleCounter++;
 	return o;
 }
 
+
+void Gamefield::addElement(ElementPtr const& elem) {
+	{
+		lock_guard<mutex> _lock(mMutexElements);
+		mElements.push_back(elem);
+	}
+	{
+		lock_guard<mutex> _lock(mMutexNewElements);
+		mNewElements.push_back(elem);
+	}
+	mQuadTree->add(elem.get());
+}
 
 void Gamefield::onConnected(ClientPtr client) {
 	//Set Callbacks
