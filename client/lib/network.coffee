@@ -60,9 +60,13 @@ class Network
 
 	decode: (data) ->
 		dv = new DataView(data)
-		pack = new Network.Packets[dv.getUint8(0)]()
-		pack.parseData(dv)
-		pack
+		try
+			pack = new Network.Packets[dv.getUint8(0)]()
+			pack.parseData(dv)
+			pack
+		catch err
+			console.error("Packet decode error", dv.getUint8(0), err)
+			
 
 
 	@parseString: (dv, pos) ->

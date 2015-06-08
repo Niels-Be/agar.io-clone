@@ -186,7 +186,8 @@
     StatsPacket.prototype.parseData = function(data) {
       this.update = data.getFloat64(1, true);
       this.collision = data.getFloat64(1 + 8, true);
-      return this.other = data.getFloat64(1 + 8 + 8, true);
+      this.other = data.getFloat64(1 + 8 + 8, true);
+      return this.elementCount = data.getUint32(1 + 8 + 8 + 8, true);
     };
 
     return StatsPacket;
@@ -271,11 +272,16 @@
     };
 
     Network.prototype.decode = function(data) {
-      var dv, pack;
+      var dv, err, pack;
       dv = new DataView(data);
-      pack = new Network.Packets[dv.getUint8(0)]();
-      pack.parseData(dv);
-      return pack;
+      try {
+        pack = new Network.Packets[dv.getUint8(0)]();
+        pack.parseData(dv);
+        return pack;
+      } catch (_error) {
+        err = _error;
+        return console.log("Packet decode error", dv.getUint8(0), err);
+      }
     };
 
     Network.parseString = function(dv, pos) {

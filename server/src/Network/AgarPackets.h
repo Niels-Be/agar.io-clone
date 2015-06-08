@@ -33,12 +33,14 @@ struct TargetPacket {
 	double x;
 	double y;
 };
-struct StatsPacket {
+struct StatsPacketStruct {
 	double update;
 	double collision;
 	double other;
+	uint32_t elements;
 };
 #pragma pack()
+typedef StructPacket<PID_GetStats, StatsPacketStruct> StatsPacket;
 
 class StartPacket : public EmptyPacket<PID_Start> {
 public:

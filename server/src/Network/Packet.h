@@ -58,7 +58,8 @@ public:
 
 protected:
 	void applyData(vector<uint8_t>& buffer) const {
-		buffer.assign((uint8_t*)&mData, ((uint8_t*)&mData)+sizeof(T));
+		buffer.reserve(1+sizeof(T));
+		buffer.insert(buffer.end(), (uint8_t*)&mData, ((uint8_t*)&mData)+sizeof(T));
 	}
 };
 

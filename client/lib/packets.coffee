@@ -87,3 +87,4 @@ class StatsPacket extends Packet
 		@update = data.getFloat64(1, true)
 		@collision = data.getFloat64(1+8, true)
 		@other = data.getFloat64(1+8+8, true)
+		@elementCount = data.getUint32(1+8+8+8, true)

@@ -367,6 +367,6 @@ void Gamefield::onGetStats(ClientPtr client, PacketPtr packet) {
 
 	printf("Timings: Update: %lf Collision: %lf Other: %lf Elements: %ld\n", timerUpdate, timerCollision, timerOther, mElements.size());
 	if(client)
-		client->emit(std::make_shared<StructPacket<PID_GetStats, StatsPacket> >(timerUpdate, timerCollision, timerOther));
+		client->emit(std::make_shared<StatsPacket>(timerUpdate, timerCollision, timerOther, (uint32_t)mElements.size()));
 }
 
