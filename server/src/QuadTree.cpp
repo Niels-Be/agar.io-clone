@@ -13,6 +13,15 @@ QuadTree::QuadTree(const Vector& mPosition, const Vector& mSize, std::function<v
 
 void QuadTree::doCollisionCheck() {
 	list<QuadTreePtr> neighbours = getNeighbours();
+
+	//start checking of children
+	if(!mIsLeaf) {
+		mChilds[0]->doCollisionCheck();
+		mChilds[1]->doCollisionCheck();
+		mChilds[2]->doCollisionCheck();
+		mChilds[3]->doCollisionCheck();
+	}
+
 	vector<QuadTreeNodePtr> oldList;
 	{
 		lock_guard<mutex> _lock(mMutex);
@@ -25,7 +34,8 @@ void QuadTree::doCollisionCheck() {
 		//Start at i + 1 because we already checked these before
 		for(size_t j = i + 1; j < oldList.size(); j++) {
 			QuadTreeNodePtr& e2 = oldList[j];
-			if(e2->isDeleted()) continue;
+			assert(e1 != e2);
+			if(e1->isDeleted() || e2->isDeleted()) continue;
 			if(e1->intersect(e2)) {
 				mCollisionCallback(e1, e2);
 			}
@@ -42,13 +52,7 @@ void QuadTree::doCollisionCheck() {
 			qt->checkCollision(e1);
 	}
 
-	//start checking of children
-	if(!mIsLeaf) {
-		mChilds[0]->doCollisionCheck();
-		mChilds[1]->doCollisionCheck();
-		mChilds[2]->doCollisionCheck();
-		mChilds[3]->doCollisionCheck();
-	}
+
 }
 
 bool QuadTree::add(QuadTreeNodePtr elem) {
@@ -56,6 +60,10 @@ bool QuadTree::add(QuadTreeNodePtr elem) {
 		if(mIsLeaf && mElements.size() < mMaxAmount) { //Still some space left
 			{
 				lock_guard<mutex> _lock(mMutex);
+				/*for(QuadTreeNodePtr& e : mElements)
+					if(e == elem)
+						printf("Double Element in TreeNode!!! %p\n", e);*/
+
 				mElements.push_back(elem);
 			}
 			if(elem->mRegion)
@@ -70,6 +78,10 @@ bool QuadTree::add(QuadTreeNodePtr elem) {
 				//Otherwise add it to this node anyway (it is probably to big for the children)
 				{
 					lock_guard<mutex> _lock(mMutex);
+					/*for(QuadTreeNodePtr& e : mElements)
+						if(e == elem)
+							printf("Double2 Element in TreeNode!!! %p\n", e);*/
+
 					mElements.push_back(elem);
 				}
 				if(elem->mRegion)
@@ -84,18 +96,21 @@ bool QuadTree::add(QuadTreeNodePtr elem) {
 }
 
 bool QuadTree::remove(QuadTreeNodePtr elem) {
-	if(isInside(elem)) {
-		auto it = mElements.begin();
-		while (it != mElements.end()) {
-			if (*it == elem)
-				break;
-			it++;
-		}
-		if (it != mElements.end()) {
+	//if(isInside(elem)) {
+		{
 			lock_guard<mutex> _lock(mMutex);
-			*it = mElements.back();
-			mElements.pop_back();
-			return true;
+
+			auto it = mElements.begin();
+			while (it != mElements.end()) {
+				if (*it == elem)
+					break;
+				it++;
+			}
+			if (it != mElements.end()) {
+				*it = mElements.back();
+				mElements.pop_back();
+				return true;
+			}
 		}
 		if (!mIsLeaf) {
 			return  mChilds[0]->remove(elem) ||
@@ -103,7 +118,7 @@ bool QuadTree::remove(QuadTreeNodePtr elem) {
 					mChilds[2]->remove(elem) ||
 					mChilds[3]->remove(elem);
 		}
-	}
+	//}
 	return false;
 }
 
@@ -117,7 +132,8 @@ void QuadTree::checkCollision(QuadTreeNodePtr e1) {
 		}
 		//Compare with own elements
 		for(QuadTreeNodePtr e2 : oldList) {
-			if(e2->isDeleted()) continue;
+			assert(e1 != e2);
+			if(e1->isDeleted() || e2->isDeleted()) continue;
 			if(e1->intersect(e2)) {
 				mCollisionCallback(e1, e2);
 			}
@@ -277,9 +293,12 @@ list<QuadTreePtr> QuadTree::getNeighbours() const {
 }
 
 void QuadTreeNode::updateRegion() {
-	//if(mRegion.expired()) return;
+	if(!mRegion) {
+		printf("Element is not in a Region\n");
+		return;
+	}
 	if(!mRegion->isInside(this)) {
-		/* //Does not work because the ball may skip regions in a lag
+		/* //Does not work because the element may skip regions in a lag
 		list<QuadTreePtr> regions = mRegion->getNeighbours();
 		for (QuadTreePtr region : regions) {
 			if (region->add(this))
@@ -288,6 +307,7 @@ void QuadTreeNode::updateRegion() {
 		if(!mRegion->getHead()->add(this)) {
 			//Should never appear
 			fprintf(stderr, "Can not find Region for position %.0lf, %.0lf\n", mPosition.x, mPosition.y);
+			assert(false);
 		}
 	}
 }

@@ -16,7 +16,7 @@ protected:
 
 private:
 	QuadTree* mRegion = NULL;
-	bool mDeleted = false;
+	volatile bool mDeleted = false;
 
 public:
 	QuadTreeNode() {}
@@ -26,6 +26,8 @@ public:
 
 	const Vector& getPosition() const { return mPosition; }
 	double getSize() const { return mSize; }
+	QuadTreePtr getRegion() const { return mRegion; }
+	void setRegion(QuadTreePtr r)  { mRegion = r; }
 
 	inline bool intersect(QuadTreeNodePtr other) {
 		double dist = getPosition().distanceSquared(other->getPosition());
