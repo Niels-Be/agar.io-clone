@@ -87,7 +87,7 @@ grunt
 
 ```
 cd server
-cmake .
+cmake -DCMAKE_BUILD_TYPE=RELEASE .
 make
 ```
 
