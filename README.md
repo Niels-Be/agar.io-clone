@@ -1,7 +1,7 @@
 Agar.io Clone
 =============
 
-A Agar.io clone built with socket.io and HTML5 Canvas on top of NodeJS.
+A Agar.io clone built with Websocket and HTML5 Canvas on top of a C++ Server.
 
 ![Image](http://i.imgur.com/Ol8qtXb.jpg)
 
@@ -40,28 +40,134 @@ Tanks to [@huytd](https://github.com/huytd/agar.io-clone) for inspiration and pa
 ---
 
 ## Installation
->You can check out a more detailed setup tutorial on @huytd`s [wiki](https://github.com/huytd/agar.io-clone/wiki/Setup)
 
 #### Requirements
-To run the game, you'll need: 
-- NodeJS with NPM installed
-- socket.io 
-- Express
+To build the Game you will need
 
+##### Client
+- NPM to install dependencies
+- Grunt to compile coffeescript
 
-#### Downloading the Dependencies
-After cloning the source code from Github, you need to run the following command to download all the dependencies (socket.io, express, etc.).
+##### Server
+- CMake > 2.6
+- C++11 Compiler
+- [Websocketpp](https://github.com/zaphoyd/websocketpp)
+- Boost-system library
+
+#### Downloading the dependencies
+
+Project: 
 
 ```
+git clone https://github.com/WaeCo/agar.io-clone.git
+cd agar.io-clone
+sudo npm install -g grunt-cli
 npm install
 ```
 
-#### Running the Server
-After download all the dependencies, you can run the server with the following command to run the server.
+Install Server dependencies:
 
 ```
-nodejs server/server.js
+sudo apt-get install cmake, boost-all-dev
+git clone https://github.com/zaphoyd/websocketpp.git
+cd websocketpp
+cmake .
+sudo make install
+```
+
+## Building
+
+### Client
+
+```
+grunt
+```
+
+### Server
+
+```
+cd server
+cmake -DCMAKE_BUILD_TYPE=RELEASE .
+make
+```
+
+---
+
+## Running
+
+Start the server
+
+```
+./server
 ```
 
 The game will then be accessible at `http://localhost:3000`.
+You will need a proxy that pass websocket calls to this port while delivering static resources to the client.
 
+## Webserver Config
+
+#### Nginx
+
+```
+server {
+        listen 80 default_server;
+        listen [::]:80 default_server ipv6only=on;
+
+        root /path/to/agar.io-clone/client;
+        index index.html index.htm;
+
+        # Make site accessible from http://localhost/
+        server_name localhost;
+
+        location / {
+                try_files $uri $uri/;
+        }
+
+        location /websocket/ {
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+                proxy_http_version 1.1;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header Host $host;
+                proxy_pass http://127.0.0.1:3000/;
+        }
+
+}
+
+```
+
+#### Apache 2.4
+
+Make sure `mod_proxy`, `mod_proxy_http` and `mod_proxy_wstunnel` are enabled.
+
+
+```
+#Module dependencies
+#  mod_proxy
+#  mod_proxy_http
+#  mod_proxy_wstunnel
+<VirtualHost *:80>
+  ServerName agar.example.com
+  ServerSignature Off
+
+  ProxyPreserveHost On
+
+  # Ensure that encoded slashes are not decoded but left in their encoded state.
+  # http://doc.gitlab.com/ce/api/projects.html#get-single-project
+  AllowEncodedSlashes NoDecode
+
+  <Location />
+    Require all granted
+  </Location>
+
+  <Location /websocket/>
+     ProxyPass ws://127.0.0.1:3000/
+  </Location>
+
+  DocumentRoot /path/to/agar.io-clone/client
+
+  ErrorLog ${APACHE_LOG_DIR}/agar-error.log
+  CustomLog ${APACHE_LOG_DIR}/agar-access.log combined
+
+</VirtualHost>
+```

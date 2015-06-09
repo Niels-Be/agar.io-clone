@@ -421,8 +421,8 @@ void Gamefield::onGetStats(ClientPtr client, PacketPtr packet) {
 	for(auto it : mFPSControl.timerOther)
 		timerOther += std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(it).count() / mFPSControl.timerOther.size();
 
-	printf("Timings: Update: %lf Collision: %lf Other: %lf Elements: %ld\n", timerUpdate, timerCollision, timerOther, mElements.size());
+	printf("Timings: Update: %lf Collision: %lf Other: %lf Elements: %ld QuadTreeNodes: %ld\n", timerUpdate, timerCollision, timerOther, mElements.size(), mQuadTree->getChildCount());
 	if(client)
-		client->emit(std::make_shared<StatsPacket>(timerUpdate, timerCollision, timerOther, (uint32_t)mElements.size()));
+		client->emit(std::make_shared<StatsPacket>(timerUpdate, timerCollision, timerOther, (uint32_t)mElements.size(), (uint32_t)mPlayer.size()));
 }
 

@@ -69,12 +69,15 @@ public:
 	bool add(QuadTreeNodePtr elem);
 	bool remove(QuadTreeNodePtr elem);
 
+	size_t getElementCount() const;
+	size_t getChildCount() const;
 private:
 
 	QuadTreePtr getHead() { return mParent ? mParent->getHead() : this; }
 
 	void checkCollision(QuadTreeNodePtr elem);
 	void split();
+	void combine();
 
 	bool isInside(QuadTreeNodePtr elem) const;
 	bool intersects(QuadTreeNodePtr elem) const;

@@ -97,6 +97,7 @@ bool QuadTree::add(QuadTreeNodePtr elem) {
 
 bool QuadTree::remove(QuadTreeNodePtr elem) {
 	//if(isInside(elem)) {
+		bool found = false;
 		{
 			lock_guard<mutex> _lock(mMutex);
 
@@ -109,9 +110,18 @@ bool QuadTree::remove(QuadTreeNodePtr elem) {
 			if (it != mElements.end()) {
 				*it = mElements.back();
 				mElements.pop_back();
-				return true;
+				found = true;
 			}
 		}
+		if(found) {
+			if(mElements.empty()) {
+				if(mIsLeaf && mParent)
+					mParent->combine();
+				else
+					combine();
+			}
+			return true;
+		} else
 		if (!mIsLeaf) {
 			return  mChilds[0]->remove(elem) ||
 					mChilds[1]->remove(elem) ||
@@ -122,6 +132,25 @@ bool QuadTree::remove(QuadTreeNodePtr elem) {
 	return false;
 }
 
+
+size_t QuadTree::getElementCount() const {
+	if(mIsLeaf)
+		return mElements.size();
+	return mElements.size() +
+		   mChilds[0]->getElementCount() +
+		   mChilds[1]->getElementCount() +
+		   mChilds[2]->getElementCount() +
+		   mChilds[3]->getElementCount();
+}
+
+
+size_t QuadTree::getChildCount() const {
+	return mIsLeaf ? 1 : 1 +
+						 mChilds[0]->getChildCount() +
+						 mChilds[1]->getChildCount() +
+						 mChilds[2]->getChildCount() +
+						 mChilds[3]->getChildCount();
+}
 
 void QuadTree::checkCollision(QuadTreeNodePtr e1) {
 	if(intersects(e1)) { //Only check if the element actually intersects this area
@@ -172,6 +201,30 @@ void QuadTree::split() {
 			}
 		}
 		mIsLeaf = false;
+	}
+}
+
+
+void QuadTree::combine() {
+	if(!mIsLeaf) {
+		if(getElementCount() < mMaxAmount / 2) {
+			printf("Combining Nodes %ld Elems: %ld\n", getChildCount(), getElementCount());
+			for(int i = 0; i < 4; i++)
+				mChilds[i]->combine();
+
+			lock_guard<mutex> _lock(mMutex);
+			for(int i = 0; i < 4; i++)
+			{
+				lock_guard<mutex> _lock(mChilds[i]->mMutex);
+				mElements.insert(mElements.end(), mChilds[i]->mElements.begin(), mChilds[i]->mElements.end());
+				delete mChilds[i];
+				mChilds[i] = NULL;
+			}
+			for(QuadTreeNodePtr& e : mElements)
+				e->mRegion = this;
+			mIsLeaf = true;
+			printf("Done Combining %ld Elems: %ld\n", getChildCount(), getElementCount());
+		}
 	}
 }
 
