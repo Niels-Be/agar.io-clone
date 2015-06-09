@@ -23,7 +23,7 @@ struct Options {
 	} food;
 	struct {
 		double defaultSize = 15;
-		double startMass = 500;
+		double startMass = 20;
 		double targetForce = 50; // unused
 		double acceleration = 5000;
 		double maxSpeed = 300;
