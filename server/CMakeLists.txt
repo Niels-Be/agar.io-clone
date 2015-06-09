@@ -34,6 +34,10 @@ set(SOURCE_FILES
     src/Shoot.h
     src/Vector.cpp
     src/Vector.h
+    src/Json/JSON.cpp
+    src/Json/JSON.h
+    src/Json/JSONValue.cpp
+    src/Json/JSONValue.h
     CMakeLists.txt)
 
 include_directories(src)

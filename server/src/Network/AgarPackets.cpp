@@ -7,6 +7,7 @@
 #include "PacketManager.h"
 #include "Player.h"
 #include "Ball.h"
+#include "Json/JSON.h"
 
 
 RegisterPacket(PID_Join, EmptyPacket<PID_Join>)
@@ -30,6 +31,11 @@ template<>
 void applyValue<String>(vector<uint8_t>& dest, const String& d) {
 	dest.insert(dest.end(), d.begin(), d.end());
 	dest.push_back(0);
+}
+
+template<>
+void applyValue<JSONValue>(vector<uint8_t>& dest, const JSONValue& d) {
+	applyValue(dest, d.Stringify(false));
 }
 
 template<>
