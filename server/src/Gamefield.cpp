@@ -43,6 +43,15 @@ ShootPtr Gamefield::createShoot(const Vector& pos, const String& color, const Ve
 	return s;
 }
 
+
+ObstraclePtr Gamefield::createObstracle(const Vector& position) {
+	ObstraclePtr o = std::make_shared<Obstracle>(shared_from_this(), mElementIds++, position);
+	addElement(o);
+	mObstracleCounter++;
+	return o;
+}
+
+
 void Gamefield::destroyElement(ElementPtr const&  elem) {
 	if(elem->isDeleted()) {
 		fprintf(stderr, "Dubble destory of element!!!!!! %d %p\n", elem->getId(), elem.get());
@@ -336,13 +345,6 @@ ElementPtr Gamefield::createFood() {
 	addElement(f);
 	mFoodCounter++;
 	return f;
-}
-
-ElementPtr Gamefield::createObstracle() {
-	ElementPtr o = std::make_shared<Obstracle>(shared_from_this(), mElementIds++, generatePos());
-	addElement(o);
-	mObstracleCounter++;
-	return o;
 }
 
 

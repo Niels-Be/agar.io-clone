@@ -9,6 +9,7 @@
 #include "GlobalDefs.h"
 #include "Vector.h"
 #include "Json/JSONValue.h"
+#include "Obstracle.h"
 
 
 struct Options {
@@ -105,6 +106,10 @@ public:
 
 	ShootPtr createShoot(const Vector& pos, const String& color, const Vector& direction);
 
+	ObstraclePtr createObstracle() { return createObstracle(generatePos()); }
+	ObstraclePtr createObstracle(const Vector& position);
+
+
 	void destroyElement(ElementPtr const&  elem);
 
 	void sendToAll(PacketPtr packet);
@@ -126,7 +131,6 @@ private:
 
 	ElementPtr createFood();
 
-	ElementPtr createObstracle();
 	void addElement(ElementPtr const& elem);
 
 	void onDisconnected(ClientPtr client);

@@ -6,9 +6,9 @@
 #define AGARIO_OBSTRACLE_H
 
 
-#include "Element.h"
+#include "MoveableElement.h"
 
-class Obstracle : public Element {
+class Obstracle : public MoveableElement {
 private:
 	int mEatCount = 0;
 public:
@@ -19,8 +19,6 @@ public:
 	virtual ElementType getType() const { return ET_Obstracle; }
 
 };
-
-typedef std::shared_ptr<Obstracle> ObstraclePtr;
 
 
 #endif //AGARIO_OBSTRACLE_H
