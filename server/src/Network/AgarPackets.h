@@ -10,9 +10,10 @@
 
 enum PacketID : uint8_t {
 	//Game Control Packets
-	PID_Join 			= 0x10,	//Empty
+	PID_Join 			= 0x10,	//Empty / Struct
 	PID_Leave			= 0x11,	//Empty
 	PID_Start			= 0x12,	//Struct
+	PID_GetLobbys		= 0x13, //Empty
 
 	//Player Packets
 	PID_UpdateTarget  	= 0x20,	//Struct
@@ -42,10 +43,12 @@ struct StatsPacketStruct {
 	uint32_t elements;
 	uint32_t player;
 };
+#pragma pack()
 DECLARE_JSON_STRUCT(StatsPacketStruct, update, collision, other, elements, player)
 
-#pragma pack()
 typedef StructPacket<PID_GetStats, StatsPacketStruct> StatsPacket;
+typedef StructPacket<PID_Join, uint32_t> JoinPacket;
+
 
 class StartPacket : public EmptyPacket<PID_Start> {
 public:

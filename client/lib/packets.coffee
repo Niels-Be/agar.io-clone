@@ -10,6 +10,17 @@ class Packet
 		dv.setUint8(0, @id)
 		ar
 
+class JoinPacket extends Packet
+	constructor: (@lobby) ->
+		super(0x10)
+
+	getData: ->
+		ar = new ArrayBuffer(1+4)
+		dv = new DataView(ar)
+		dv.setUint8(0, @id)
+		dv.setUint32(1, @lobby, true)
+		ar
+
 class StartPacket extends Packet
 	constructor: (@name) ->
 		super(0x12)

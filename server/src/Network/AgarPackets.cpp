@@ -10,9 +10,10 @@
 #include "Json/JSON.h"
 
 
-RegisterPacket(PID_Join, EmptyPacket<PID_Join>)
+RegisterPacket(PID_Join, JoinPacket)
 RegisterPacket(PID_Leave, EmptyPacket<PID_Leave>)
 RegisterPacket(PID_Start, StartPacket)
+RegisterPacket(PID_GetLobbys, EmptyPacket<PID_GetLobbys>)
 RegisterPacket(PID_UpdateTarget, StructPacket<PID_UpdateTarget, TargetPacket>)
 RegisterPacket(PID_SplitUp, EmptyPacket<PID_SplitUp>)
 RegisterPacket(PID_Shoot, EmptyPacket<PID_Shoot>)

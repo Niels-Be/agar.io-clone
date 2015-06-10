@@ -19,8 +19,7 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-Gamefield::Gamefield(ServerPtr server) : mServer(server) {
-	mServer->setOnConnected(std::bind(&Gamefield::onConnected, this, _1));
+Gamefield::Gamefield(ServerPtr server, const String& name, const Options&  options) : mServer(server), mName(name), mOptions(options) {
 	//mQuadTree = make_shared<QuadTree>(Vector(0,0), Vector(mOptions.width,  mOptions.height), std::bind(&Gamefield::doIntersect, this, _1, _2));
 	mQuadTree = new QuadTree(Vector(0,0), Vector(mOptions.width,  mOptions.height), std::bind(&Gamefield::doIntersect, this, _1, _2));
 }
@@ -359,15 +358,6 @@ void Gamefield::addElement(ElementPtr const& elem) {
 	}
 }
 
-void Gamefield::onConnected(ClientPtr client) {
-	//Set Callbacks
-	client->on(PID_Join, std::bind(&Gamefield::onJoin, this, _1, _2));
-	client->on(PID_Leave, std::bind(&Gamefield::onLeave, this, _1, _2));
-	client->on(PID_Start, std::bind(&Gamefield::onStart, this, _1, _2));
-	client->on(PID_GetStats, std::bind(&Gamefield::onGetStats, this, _1, _2));
-	client->setOnDisconnect(std::bind(&Gamefield::onDisconnected, this, _1));
-}
-
 void Gamefield::onDisconnected(ClientPtr client) {
 	auto it = mPlayer.find(client->getId());
 	if(it != mPlayer.end()) {
@@ -382,6 +372,11 @@ void Gamefield::onDisconnected(ClientPtr client) {
 }
 
 void Gamefield::onJoin(ClientPtr client, PacketPtr packet) {
+	//Set Callbacks
+	client->on(PID_Leave, std::bind(&Gamefield::onLeave, this, _1, _2));
+	client->on(PID_Start, std::bind(&Gamefield::onStart, this, _1, _2));
+	client->on(PID_GetStats, std::bind(&Gamefield::onGetStats, this, _1, _2));
+	client->setOnDisconnect(std::bind(&Gamefield::onDisconnected, this, _1));
 	//Send all elements
 	client->emit(std::make_shared<SetElementsPacket>(mElements));
 	//Add to update queue

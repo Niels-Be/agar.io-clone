@@ -8,20 +8,20 @@
 #include <thread>
 #include "GlobalDefs.h"
 #include "Vector.h"
-#include "Element.h"
+#include "Json/JSONValue.h"
 
 
 struct Options {
 	double width = 5000;
 	double height = 5000;
-	struct {
+	struct Food {
 		String color = "#F1C40F";
 		double spawn = 5; // per Sec
 		uint32_t max = 500;
 		uint32_t mass = 1;
 		double size = 5;
 	} food;
-	struct {
+	struct Player {
 		double defaultSize = 15;
 		double startMass = 20;
 		vector<String> color = { "#EA6153", "#00FFFF", "#7FFF00", "#6495ED", "#9932CC", "#FF00FF", "#FFE4B5", "#000000" };
@@ -34,13 +34,13 @@ struct Options {
 		uint32_t starveOffset = 250;
 		double starveMassFactor = 0.001; //Percent of mass per sec
 	} player;
-	struct {
+	struct Shoot {
 		uint32_t mass = 10;
 		double size = 15;
 		double speed = 750;
 		double acceleration = 400;
 	} shoot;
-	struct {
+	struct Obstracle {
 		String color = "#00FF00";
 		double spawn = 0.05;
 		uint32_t max = 5;
@@ -50,6 +50,12 @@ struct Options {
 	} obstracle;
 
 };
+DECLARE_JSON_STRUCT(Options::Food, color, spawn, max, mass, size)
+DECLARE_JSON_STRUCT(Options::Player, defaultSize, startMass, color, targetForce, acceleration, maxSpeed, speedPenalty, eatFactor, minSplitMass, starveOffset, starveMassFactor)
+DECLARE_JSON_STRUCT(Options::Shoot, mass, size, speed, acceleration)
+DECLARE_JSON_STRUCT(Options::Obstracle, color, spawn, max, size, needMass, eatCount)
+DECLARE_JSON_STRUCT(Options, width, height, food, player, shoot, obstracle)
+
 
 struct FPSControl {
 	list<std::chrono::high_resolution_clock::duration> timerUpdate;
@@ -60,6 +66,7 @@ struct FPSControl {
 class Gamefield : public std::enable_shared_from_this<Gamefield> {
 private:
 	ServerPtr mServer;
+	String mName;
 	Options mOptions;
 	vector<ElementPtr> mElements;
 	volatile uint32_t mElementIds = 0;
@@ -86,8 +93,12 @@ private:
 	mutex mMutexDeletedElements;
 
 public:
-	Gamefield(ServerPtr server);
+	Gamefield(ServerPtr server, const String& name, const Options& options = Options());
 	~Gamefield();
+
+	const String& getName() const { return mName; }
+	inline const Options& getOptions() const { return mOptions; }
+	uint32_t getPlayerCount() const { return mPlayer.size(); }
 
 	BallPtr createBall(PlayerPtr const&  player) { return createBall(player, generatePos()); }
 	BallPtr createBall(PlayerPtr const&  player, const Vector& position);
@@ -98,7 +109,7 @@ public:
 
 	void sendToAll(PacketPtr packet);
 
-	inline const Options& getOptions() const { return mOptions; }
+	void onJoin(ClientPtr client, PacketPtr packet);
 
 private:
 	Vector generatePos();
@@ -118,10 +129,7 @@ private:
 	ElementPtr createObstracle();
 	void addElement(ElementPtr const& elem);
 
-	void onConnected(ClientPtr client);
 	void onDisconnected(ClientPtr client);
-
-	void onJoin(ClientPtr client, PacketPtr packet);
 
 	void onLeave(ClientPtr client, PacketPtr packet);
 

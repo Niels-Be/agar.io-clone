@@ -42,7 +42,7 @@ set(SOURCE_FILES
 
 include_directories(src)
 
-add_executable(server ${SOURCE_FILES} src/Network/AgarPackets.cpp src/Network/AgarPackets.h src/QuadTree.cpp src/QuadTree.h)
+add_executable(server ${SOURCE_FILES} src/Network/AgarPackets.cpp src/Network/AgarPackets.h src/QuadTree.cpp src/QuadTree.h src/LobbyManager.cpp src/LobbyManager.h)
 
 find_package(Boost COMPONENTS system REQUIRED)
 target_link_libraries(server ${Boost_LIBRARIES})

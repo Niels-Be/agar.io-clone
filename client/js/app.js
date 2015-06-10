@@ -1,5 +1,5 @@
 (function() {
-  var Ball, Game, Grid, JsonPacket, Network, Packet, PlayerUpdatePacket, SetElementsPacket, StartPacket, StatsPacket, TargetPacket, UpdateElementsPacket, extend, stringToUint, uintToString,
+  var Ball, Game, Grid, JoinPacket, JsonPacket, Network, Packet, PlayerUpdatePacket, SetElementsPacket, StartPacket, StatsPacket, TargetPacket, UpdateElementsPacket, extend, stringToUint, uintToString,
     extend1 = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -48,6 +48,27 @@
     return Packet;
 
   })();
+
+  JoinPacket = (function(superClass) {
+    extend1(JoinPacket, superClass);
+
+    function JoinPacket(lobby) {
+      this.lobby = lobby;
+      JoinPacket.__super__.constructor.call(this, 0x10);
+    }
+
+    JoinPacket.prototype.getData = function() {
+      var ar, dv;
+      ar = new ArrayBuffer(1 + 4);
+      dv = new DataView(ar);
+      dv.setUint8(0, this.id);
+      dv.setUint32(1, this.lobby, true);
+      return ar;
+    };
+
+    return JoinPacket;
+
+  })(Packet);
 
   StartPacket = (function(superClass) {
     extend1(StartPacket, superClass);
@@ -231,6 +252,8 @@
       0x11: Packet.bind(void 0, 0x11),
       Start: 0x12,
       0x12: StartPacket.bind(void 0),
+      GetLobby: 0x13,
+      0x13: JsonPacket.bind(0x13),
       UpdateTarget: 0x20,
       0x20: TargetPacket,
       SplitUp: 0x21,
