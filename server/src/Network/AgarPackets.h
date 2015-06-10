@@ -38,6 +38,7 @@ struct StatsPacketStruct {
 	double collision;
 	double other;
 	uint32_t elements;
+	uint32_t player;
 };
 #pragma pack()
 typedef StructPacket<PID_GetStats, StatsPacketStruct> StatsPacket;
