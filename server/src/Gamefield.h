@@ -42,12 +42,17 @@ struct Options {
 	struct {
 		String color = "#00FF00";
 		double spawn = 0.05;
-		uint32_t max = 5;
+		uint32_t max = 7;
 		double size = 100;
 		uint32_t needMass = 200;
 		int eatCount = 7;
 	} obstracle;
-
+	struct {
+		String color = "#0000FF";
+		double size = 25;
+		double spawn = 0.1;
+		uint32_t max = 5;
+	} item;
 };
 
 struct FPSControl {
