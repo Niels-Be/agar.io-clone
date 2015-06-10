@@ -5,6 +5,7 @@
 #ifndef SERVER_AGARPACKETS_H
 #define SERVER_AGARPACKETS_H
 
+#include <Json/JSONValue.h>
 #include "Packet.h"
 
 enum PacketID : uint8_t {
@@ -25,7 +26,8 @@ enum PacketID : uint8_t {
 	PID_UpdateElements	= 0x31,	//Dynamic
 
 	//Debug Packets
-	PID_GetStats 		= 0xF0	//Struct
+	PID_GetStats 		= 0xF0,	//Struct
+	PID_Debug			= 0xF1  //Json
 };
 
 #pragma pack(1)
@@ -40,6 +42,8 @@ struct StatsPacketStruct {
 	uint32_t elements;
 	uint32_t player;
 };
+DECLARE_JSON_STRUCT(StatsPacketStruct, update, collision, other, elements, player)
+
 #pragma pack()
 typedef StructPacket<PID_GetStats, StatsPacketStruct> StatsPacket;
 
@@ -104,6 +108,43 @@ protected:
 	void applyData(vector<uint8_t>& buffer) const;
 };
 
+
+template<uint8_t ID>
+class JSONPacket : public Packet {
+public:
+	unique_ptr<JSONValue> Value;
+
+	JSONPacket() {}
+	JSONPacket(unique_ptr<JSONValue>&& val) : Value(std::move(val)) {}
+	template<class T>
+	JSONPacket(const T& data) {
+		Value.reset(JSONValue::From(data));
+	}
+
+	~JSONPacket() {}
+
+	template<class T>
+	void get(T& data) {
+		Value->Cast(data);
+	}
+
+	uint8_t getId() const { return ID; }
+
+	void parseData(const char* data, uint32_t size) {
+		Value.reset(JSON::Parse(data));
+	}
+
+protected:
+	void applyData(vector<uint8_t>& buffer) const {
+		String d = Value->Stringify(false);
+		buffer.reserve(1 + d.length());
+		buffer.insert(buffer.end(), d.begin(), d.end());
+		buffer.push_back(0);
+	}
+
+};
+
+typedef JSONPacket<PID_Debug> DebugPacket;
 
 
 #endif //SERVER_AGARPACKETS_H

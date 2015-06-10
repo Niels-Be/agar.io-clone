@@ -21,7 +21,6 @@ RegisterPacket(PID_GetStats, EmptyPacket<PID_GetStats>)
 
 
 
-
 template <class T>
 void applyValue(vector<uint8_t>& dest, const T& d) {
 	dest.insert(dest.end(), (uint8_t*)&d, ((uint8_t*)&d)+sizeof(T));
@@ -110,3 +109,4 @@ void UpdateElementsPacket::applyData(vector<uint8_t>& buffer) const {
 	}
 
 }
+

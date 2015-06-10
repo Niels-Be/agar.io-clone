@@ -31,6 +31,10 @@
 #include "JSON.h"
 
 class JSON;
+namespace JSONTypes {
+template< class T, class Enable = void >
+struct TypeTraits;
+}
 
 enum JSONType { JSONType_Null, JSONType_String, JSONType_Bool, JSONType_Number, JSONType_Array, JSONType_Object };
 
@@ -46,6 +50,7 @@ class JSONValue
 		JSONValue(double m_number_value);
 		JSONValue(const JSONArray &m_array_value);
 		JSONValue(const JSONObject &m_object_value);
+
 		~JSONValue();
 
 		bool IsNull() const;
@@ -60,6 +65,16 @@ class JSONValue
 		double AsNumber() const;
 		const JSONArray &AsArray() const;
 		const JSONObject &AsObject() const;
+
+		template<class T>
+		void Cast(T& d) const {
+			JSONTypes::TypeTraits<T>::toType(d, this);
+		}
+
+		template <class T>
+		static JSONValue* From(const T& d) {
+			return JSONTypes::TypeTraits<T>::toValue(d);
+		}
 
 		std::size_t CountChildren() const;
 		bool HasChild(std::size_t index) const;
@@ -85,5 +100,122 @@ class JSONValue
 		JSONArray array_value;
 		JSONObject object_value;
 };
+
+
+namespace JSONTypes {
+template<bool T> using enable_if_t=typename std::enable_if<T>::type;
+
+template<> struct TypeTraits<bool> {
+	static JSONValue* toValue(const bool& d) {
+		return new JSONValue(d);
+	}
+	static void toType(bool& d, const JSONValue* val) {
+		assert(val->IsBool());
+		d = val->AsBool();
+	}
+};
+template<class T> struct TypeTraits<T, enable_if_t<std::is_arithmetic<T>::value> > {
+	static JSONValue* toValue(const T& d) {
+		return new JSONValue(static_cast<double>(d));
+	}
+	static void toType(T& d, const JSONValue* val) {
+		assert(val->IsNumber());
+		d = static_cast<T>(val->AsNumber());
+	}
+};
+template<> struct TypeTraits<std::string> {
+	static JSONValue* toValue(const std::string& d) {
+		return new JSONValue(d);
+	}
+	static void toType(std::string& d, const JSONValue* val) {
+		assert(val->IsString());
+		d = val->AsString();
+	}
+};
+template<class T> struct TypeTraits<T, enable_if_t<std::is_same<typename std::decay<T>::type, char*>::value> > {
+	static JSONValue* toValue(const T& d) {
+		return new JSONValue(d);
+	}
+	static void toType(T& d, const JSONValue* val) {
+		assert(val->IsString());
+		d = val->AsString().c_str();
+	}
+};
+template <> struct TypeTraits<JSONArray> {
+	static JSONValue* toValue(const JSONArray& d) {
+		return new JSONValue(d);
+	}
+	static void toType(JSONArray& d, const JSONValue* val) {
+		assert(val->IsArray());
+		d = val->AsArray();
+	}
+};
+template<class T> struct TypeTraits<T, enable_if_t<std::is_same<T, std::vector< typename T::value_type, typename T::allocator_type > >::value> > {
+	static JSONValue* toValue(const T& d) {
+		JSONArray arr;
+		arr.reserve(d.size());
+		for(auto& it : d)
+			arr.push_back(JSONValue::From(it));
+		return new JSONValue(arr);
+	}
+	static void toType(T& d, const JSONValue* val) {
+		assert(val->IsArray());
+		JSONArray arr = val->AsArray();
+		d.reserve(arr.size());
+		for(JSONValue* it : arr) {
+			typename T::value_type data;
+			it->Cast(data);
+			d.push_back(data);
+		}
+	}
+};
+}
+
+
+#define EVAL0(...) __VA_ARGS__
+#define EVAL1(...) EVAL0 (EVAL0 (EVAL0 (__VA_ARGS__)))
+#define EVAL2(...) EVAL1 (EVAL1 (EVAL1 (__VA_ARGS__)))
+#define EVAL(...) EVAL2 (EVAL2 (EVAL2 (__VA_ARGS__)))
+//#define EVAL(...) EVAL3 (EVAL3 (EVAL3 (__VA_ARGS__)))
+//#define EVAL(...)  EVAL4 (EVAL4 (EVAL4 (__VA_ARGS__)))
+
+#define MAP_END(...)
+#define MAP_OUT
+
+#define MAP_GET_END() 0, MAP_END
+#define MAP_NEXT0(test, next, ...) next MAP_OUT
+#define MAP_NEXT1(test, next) MAP_NEXT0 (test, next, 0)
+#define MAP_NEXT(test, next)  MAP_NEXT1 (MAP_GET_END test, next)
+
+#define MAP0(f, a1, a2, x, peek, ...) f(a1, a2, x) MAP_NEXT (peek, MAP1) (f, a1, a2, peek, __VA_ARGS__)
+#define MAP1(f, a1, a2, x, peek, ...) f(a1, a2, x) MAP_NEXT (peek, MAP0) (f, a1, a2, peek, __VA_ARGS__)
+#define MAP(f, a1, a2, ...) EVAL (MAP1 (f, a1, a2,  __VA_ARGS__, (), 0))
+
+
+#define DECLARE_JSON_TO_VALUE_IMPL(obj, elem, entry) \
+	obj[#entry] = JSONValue::From(elem . entry);
+
+#define DECLARE_JSON_FROM_VALUE_IMPL(obj, elem, entry) \
+	obj[#entry]->Cast(elem . entry);
+
+#define DECLARE_JSON_TO_VALUE(obj, elem, ...) MAP(DECLARE_JSON_TO_VALUE_IMPL, obj, elem, __VA_ARGS__)
+#define DECLARE_JSON_FROM_VALUE(obj, elem, ...) MAP(DECLARE_JSON_FROM_VALUE_IMPL, obj, elem, __VA_ARGS__)
+
+#define DECLARE_JSON_STRUCT(Type, ...) \
+namespace JSONTypes { \
+template<> struct TypeTraits<Type> { \
+static JSONValue* toValue(const Type& d) { \
+	JSONObject obj; \
+	DECLARE_JSON_TO_VALUE(obj, d, __VA_ARGS__) \
+	return new JSONValue(obj); \
+} \
+static void toType(Type& d, const JSONValue* val) { \
+	assert(val->IsObject()); \
+	JSONObject obj = val->AsObject(); \
+	DECLARE_JSON_FROM_VALUE(obj, d, __VA_ARGS__) \
+}};}
+
+
+
 
 #endif

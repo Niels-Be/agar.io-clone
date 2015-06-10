@@ -23,6 +23,7 @@
  */
 
 #include "JSON.h"
+#include "JSONValue.h"
 
 /**
  * Blocks off the public constructor

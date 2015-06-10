@@ -88,3 +88,19 @@ class StatsPacket extends Packet
 		@collision = data.getFloat64(1+8, true)
 		@other = data.getFloat64(1+8+8, true)
 		@elementCount = data.getUint32(1+8+8+8, true)
+		@playerCount = data.getUint32(1+8+8+8+4, true)
+
+class JsonPacket extends Packet
+	constructor: (@id, @data) ->
+		super(@id)
+
+	getData: ->
+		strbuf = stringToUint(JSON.stringify(@data))
+		ar = new Uint8Array(1+strbuf.length)
+		ar.set([@id], 0)
+		ar.set(strbuf, 1)
+		ar.buffer
+
+	parseData: (data) ->
+		[pos, str] = Network.parseString(data, 1)
+		@data = JSON.parse(str)

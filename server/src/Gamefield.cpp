@@ -401,9 +401,9 @@ void Gamefield::onLeave(ClientPtr client, PacketPtr packet) {
 
 void Gamefield::onStart(ClientPtr client, PacketPtr packet) {
 	auto p = std::dynamic_pointer_cast<StartPacket >(packet);
-	//TODO color
+	String color = mOptions.player.color[rand()%mOptions.player.color.size()];
 	printf("Player %s joind the game\n", p->Name.c_str());
-	PlayerPtr ply = std::make_shared<Player>(shared_from_this(), client, "#FF0000", p->Name);
+	PlayerPtr ply = std::make_shared<Player>(shared_from_this(), client, color, p->Name);
 	mPlayer[client->getId()] = ply;
 	ply->addBall(createBall(ply));
 	ply->updateClient();

@@ -24,6 +24,7 @@ struct Options {
 	struct {
 		double defaultSize = 15;
 		double startMass = 20;
+		vector<String> color = { "#EA6153", "#00FFFF", "#7FFF00", "#6495ED", "#9932CC", "#FF00FF", "#FFE4B5", "#000000" };
 		double targetForce = 50; // unused
 		double acceleration = 5000;
 		double maxSpeed = 300;
