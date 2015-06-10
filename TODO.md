@@ -1,7 +1,7 @@
 TODO List
 =========
 
-1. Improve render speed [Matter.js](http://brm.io/matter-js-demo/) [Pixi.js](https://github.com/GoodBoyDigital/pixi.js)
+1. Improve render speed [Matter.js](http://brm.io/matter-js-demo/) or [Pixi.js](https://github.com/GoodBoyDigital/pixi.js)
 2. Lobby Browser
 3. Create a new Lobby
 4. ~~Obstracles can split~~
