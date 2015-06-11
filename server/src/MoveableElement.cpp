@@ -53,19 +53,6 @@ void MoveableElement::update(double timediff) {
 	}
 }
 
-void MoveableElement::setDirection(const Vector& direction, bool isMoving) {
-	mIsMoving = isMoving;
-	mDirection = direction;
-}
-
-void MoveableElement::setBoost(const Vector& velocity, double acceleration) {
-	mBoostVelocity = velocity;
-	mBoostAcceleration = acceleration;
-}
-
-void MoveableElement::setBoostFactor(double boost) {
-	mBoostFactor = boost;
-}
 
 double MoveableElement::getSpeed() const {
 	return (mVelocity + mBoostVelocity).lengthSquared();

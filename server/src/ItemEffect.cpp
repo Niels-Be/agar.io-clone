@@ -57,13 +57,13 @@ private:
 	double mTimediff = 0;
 public:
 	BoosterEffect(const BallPtr& ball) : ItemEffect(ball) {
-		mBall->setBoostFactor(3);
+		mBall->setBoostFactor(mBall->getBoostFactor() + 2);
 	}
 
 	bool update(double diff) {
 		mTimediff+=diff;
 		if(mTimediff > 5) {
-			mBall->setBoostFactor(1);
+			mBall->setBoostFactor(mBall->getBoostFactor() - 2);
 			return false;
 		}
 		return true;

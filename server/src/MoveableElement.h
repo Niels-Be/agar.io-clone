@@ -24,14 +24,20 @@ public:
 					uint32_t mass = 0, double speed = 0);
 	virtual ~MoveableElement() {}
 
-	void setDirection(const Vector& direction, bool isMoving = true);
-
+	void setDirection(const Vector& direction, bool isMoving = true) {
+		mIsMoving = isMoving;
+		mDirection = direction;
+	}
 	Vector getMoveDirection() const { return Vector::FromAngle((mVelocity + mBoostVelocity).angle()); }
 
 	bool isMoving() const { return mIsMoving; }
 
-	void setBoost(const Vector& velocity, double acceleration);
-	void setBoostFactor(double boost);
+	void setBoost(const Vector& velocity, double acceleration) {
+		mBoostVelocity = velocity;
+		mBoostAcceleration = acceleration;
+	}
+	void setBoostFactor(double boost) { mBoostFactor = boost; }
+	double getBoostFactor() const { return mBoostFactor; }
 
 	virtual double getSpeed() const;
 
