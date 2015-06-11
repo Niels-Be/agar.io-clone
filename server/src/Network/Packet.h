@@ -55,6 +55,8 @@ public:
 	const T& operator*() const { return mData; }
 	T* operator->() { return &mData; }
 	const T* operator->() const { return &mData; }
+	T* get() { return &mData; }
+	const T* get() const { return &mData; }
 
 protected:
 	void applyData(vector<uint8_t>& buffer) const {

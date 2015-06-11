@@ -6,6 +6,7 @@
 #include "Gamefield.h"
 #include "Shoot.h"
 #include "Player.h"
+#include "ItemEffect.h"
 
 Ball::Ball(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, PlayerPtr player) :
 		Ball(mGamefield, mId, mPosition, player, mGamefield->getOptions().player.startMass) {
@@ -15,6 +16,10 @@ Ball::Ball(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, Playe
 		MoveableElement(mGamefield, mId, mPosition, player->getColor(), 1, 1, 1),
 		mPlayer(player) {
 	setMass(mGamefield->getOptions().player.startMass);
+}
+
+
+Ball::~Ball() {
 }
 
 BallPtr Ball::splitUp(const Vector& direction) {
@@ -41,11 +46,22 @@ ShootPtr Ball::shoot(const Vector& direction) {
 			min(max(mPosition.x + direction.x * mSize * 1.6, 0.), mGamefield->getOptions().width),
 			min(max(mPosition.y + direction.y * mSize * 1.6, 0.), mGamefield->getOptions().height)
 	);
+	if(hasEffect(IT_SniperShoot)) {
+		if (!mItemEffects[IT_SniperShoot]->consume()) {
+			mItemEffects.erase(IT_SniperShoot);
+		}
+		// Create a sniper shoot
+	}
 	ShootPtr b = mGamefield->createShoot(pos, mColor, direction);
 	this->addMass(-mGamefield->getOptions().shoot.mass);
 
 	//TODO deflect on wall
 	return b;
+}
+
+
+void Ball::applyEffect(ItemEffectPtr effect) {
+	mItemEffects.emplace(effect->getType(), std::move(effect));
 }
 
 void Ball::setMass(uint32_t mass) {
@@ -56,6 +72,12 @@ void Ball::setMass(uint32_t mass) {
 
 bool Ball::tryEat(ElementPtr other) {
 	if (other->getMass() > 0 && other->getSize() * mGamefield->getOptions().player.eatFactor < mSize) {
+		if(other->getType() == ET_Ball) {
+			BallPtr ball(std::dynamic_pointer_cast<Ball>(other));
+			if(ball->hasEffect(IT_Invincible))
+				return false;
+		}
+
 		this->addMass(other->getMass());
 		mGamefield->destroyElement(other);
 		mPlayer->updateClient();
@@ -67,8 +89,16 @@ bool Ball::tryEat(ElementPtr other) {
 void Ball::update(double timediff) {
 	MoveableElement::update(timediff);
 
-	//TODO move mStarvTimer somewhere else because each ball has the same value
-	mStarveTimer += timediff;
+	//Update Effects
+	for(auto it = mItemEffects.begin(), end = mItemEffects.end(); it != end;) {
+		if (!it->second->update(timediff)) {
+			it = mItemEffects.erase(it);
+		} else
+			it++;
+	}
+
+	if(hasEffect(IT_NoHunger))
+		mStarveTimer += timediff;
 	if (mStarveTimer > 1) {
 		if (mMass > mGamefield->getOptions().player.starveOffset) {
 			mStarveMass += mMass * mGamefield->getOptions().player.starveMassFactor;

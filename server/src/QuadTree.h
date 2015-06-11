@@ -63,7 +63,7 @@ private:
 	mutex mMutex;
 
 public:
-	QuadTree(const Vector& mPosition, const Vector& mSize, std::function<void (QuadTreeNodePtr, QuadTreeNodePtr)> mCollisionCallback, size_t mMaxAmount = 5, QuadTreePtr mParent = QuadTreePtr());
+	QuadTree(const Vector& mPosition, const Vector& mSize, std::function<void (QuadTreeNodePtr, QuadTreeNodePtr)> mCollisionCallback, size_t mMaxAmount = 5, QuadTreePtr mParent = NULL);
 
 	void doCollisionCheck();
 	bool add(QuadTreeNodePtr elem);

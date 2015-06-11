@@ -7,17 +7,18 @@
 #include "PacketManager.h"
 #include "Player.h"
 #include "Ball.h"
+#include "Json/JSON.h"
 
 
-RegisterPacket(PID_Join, EmptyPacket<PID_Join>)
+RegisterPacket(PID_Join, JoinPacket)
 RegisterPacket(PID_Leave, EmptyPacket<PID_Leave>)
 RegisterPacket(PID_Start, StartPacket)
+RegisterPacket(PID_GetLobbies, EmptyPacket<PID_GetLobbies>)
 RegisterPacket(PID_UpdateTarget, StructPacket<PID_UpdateTarget, TargetPacket>)
 RegisterPacket(PID_SplitUp, EmptyPacket<PID_SplitUp>)
 RegisterPacket(PID_Shoot, EmptyPacket<PID_Shoot>)
 RegisterPacket(PID_RIP, EmptyPacket<PID_RIP>)
 RegisterPacket(PID_GetStats, EmptyPacket<PID_GetStats>)
-
 
 
 
@@ -30,6 +31,11 @@ template<>
 void applyValue<String>(vector<uint8_t>& dest, const String& d) {
 	dest.insert(dest.end(), d.begin(), d.end());
 	dest.push_back(0);
+}
+
+template<>
+void applyValue<JSONValue>(vector<uint8_t>& dest, const JSONValue& d) {
+	applyValue(dest, d.Stringify(false));
 }
 
 template<>
@@ -104,3 +110,4 @@ void UpdateElementsPacket::applyData(vector<uint8_t>& buffer) const {
 	}
 
 }
+

@@ -34,11 +34,15 @@ set(SOURCE_FILES
     src/Shoot.h
     src/Vector.cpp
     src/Vector.h
+    src/Json/JSON.cpp
+    src/Json/JSON.h
+    src/Json/JSONValue.cpp
+    src/Json/JSONValue.h
     CMakeLists.txt)
 
 include_directories(src)
 
-add_executable(server ${SOURCE_FILES} src/Network/AgarPackets.cpp src/Network/AgarPackets.h src/QuadTree.cpp src/QuadTree.h)
+add_executable(server ${SOURCE_FILES} src/Network/AgarPackets.cpp src/Network/AgarPackets.h src/QuadTree.cpp src/QuadTree.h src/LobbyManager.cpp src/LobbyManager.h src/Item.cpp src/Item.h src/ItemEffect.cpp src/ItemEffect.h)
 
 find_package(Boost COMPONENTS system REQUIRED)
 target_link_libraries(server ${Boost_LIBRARIES})

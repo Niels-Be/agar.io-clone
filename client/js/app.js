@@ -1,5 +1,5 @@
 (function() {
-  var Ball, Game, Grid, Network, Packet, PlayerUpdatePacket, SetElementsPacket, StartPacket, StatsPacket, TargetPacket, UpdateElementsPacket, extend, stringToUint, uintToString,
+  var Ball, Game, Grid, JoinPacket, JsonPacket, Network, Packet, PlayerUpdatePacket, SetElementsPacket, StartPacket, StatsPacket, TargetPacket, UpdateElementsPacket, extend, stringToUint, uintToString,
     extend1 = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -48,6 +48,27 @@
     return Packet;
 
   })();
+
+  JoinPacket = (function(superClass) {
+    extend1(JoinPacket, superClass);
+
+    function JoinPacket(lobby) {
+      this.lobby = lobby;
+      JoinPacket.__super__.constructor.call(this, 0x10);
+    }
+
+    JoinPacket.prototype.getData = function() {
+      var ar, dv;
+      ar = new ArrayBuffer(1 + 4);
+      dv = new DataView(ar);
+      dv.setUint8(0, this.id);
+      dv.setUint32(1, this.lobby, true);
+      return ar;
+    };
+
+    return JoinPacket;
+
+  })(Packet);
 
   StartPacket = (function(superClass) {
     extend1(StartPacket, superClass);
@@ -187,10 +208,44 @@
       this.update = data.getFloat64(1, true);
       this.collision = data.getFloat64(1 + 8, true);
       this.other = data.getFloat64(1 + 8 + 8, true);
-      return this.elementCount = data.getUint32(1 + 8 + 8 + 8, true);
+      this.elementCount = data.getUint32(1 + 8 + 8 + 8, true);
+      return this.playerCount = data.getUint32(1 + 8 + 8 + 8 + 4, true);
     };
 
     return StatsPacket;
+
+  })(Packet);
+
+  JsonPacket = (function(superClass) {
+    extend1(JsonPacket, superClass);
+
+    function JsonPacket(id1, data1) {
+      this.id = id1;
+      this.data = data1;
+      JsonPacket.__super__.constructor.call(this, this.id);
+    }
+
+    JsonPacket.prototype.getData = function() {
+      var ar, strbuf;
+      console.log("JsonData", this.id, this.data);
+      if (this.data) {
+        strbuf = stringToUint(JSON.stringify(this.data));
+        ar = new Uint8Array(1 + strbuf.length);
+        ar.set([this.id], 0);
+        ar.set(strbuf, 1);
+        return ar.buffer;
+      } else {
+        return JsonPacket.__super__.getData.call(this);
+      }
+    };
+
+    JsonPacket.prototype.parseData = function(data) {
+      var pos, ref, str;
+      ref = Network.parseString(data, 1), pos = ref[0], str = ref[1];
+      return this.data = JSON.parse(str);
+    };
+
+    return JsonPacket;
 
   })(Packet);
 
@@ -202,6 +257,8 @@
       0x11: Packet.bind(void 0, 0x11),
       Start: 0x12,
       0x12: StartPacket.bind(void 0),
+      GetLobby: 0x13,
+      0x13: JsonPacket.bind(void 0, 0x13),
       UpdateTarget: 0x20,
       0x20: TargetPacket,
       SplitUp: 0x21,
@@ -280,7 +337,7 @@
         return pack;
       } catch (_error) {
         err = _error;
-        return console.log("Packet decode error", dv.getUint8(0), err);
+        return console.error("Packet decode error", dv.getUint8(0), err);
       }
     };
 
@@ -474,7 +531,8 @@
       0: "ball",
       1: "food",
       2: "shoot",
-      3: "obstracle"
+      3: "obstracle",
+      4: "item"
     };
 
     Game.defaultOptions = {
@@ -519,6 +577,11 @@
         textBorder: "#000000",
         textBorderSize: 3,
         defaultSize: 10
+      },
+      item: {
+        border: 5,
+        borderColor: "#6666FF",
+        fillColor: "#0000FF"
       }
     };
 
@@ -548,40 +611,33 @@
 
     Game.prototype.rooms = {};
 
-    Game.prototype.lastRoom = 0;
-
     function Game(options) {
       this.options = extend(extend({}, Game.defaultOptions), options);
       this.grid = new Grid(this, this.options.grid);
       this.init();
-
-      /*
-      		@lobbySocket.emit "getRooms"
-      
-      		@lobbySocket.on "availableRooms", (rooms) =>
-      			@rooms = extend rooms, @rooms
-      			console.log("Rooms:", @rooms)
-      			@roomsText.innerHTML = ""
-      			for i,room of @rooms
-      				@roomsText.innerHTML += "<option value=\""+i+"\" "+(if @lastRoom == i then "selected=\"selected\"" else "")+">"+room.name+" ("+room.playercount+")</option>"
-      			@join @lastRoom
-      
-      		@lobbySocket.on "roomCreated", (status, err) =>
-      			if status
-      				@lobbySocket.emit "getRooms"
-      			else
-      				console.log("Room Create:", err)
-       */
       this.net.onConnect((function(_this) {
         return function() {
           console.log("Connected");
-          _this.net.emit(Network.Packets.Join);
-          _this.gamefield = {
-            width: 5000,
-            height: 5000
-          };
-          _this.inRoom = true;
-          return _this.updatePlayer();
+          return _this.net.emit(Network.Packets.GetLobby);
+        };
+      })(this));
+      this.net.on(Network.Packets.GetLobby, (function(_this) {
+        return function(packet) {
+          var i, k, len, ref, ref1, room;
+          _this.rooms = {};
+          ref = packet.data;
+          for (k = 0, len = ref.length; k < len; k++) {
+            room = ref[k];
+            _this.rooms[room.id] = room;
+          }
+          console.log("Rooms:", _this.rooms);
+          _this.roomsText.innerHTML = "";
+          ref1 = _this.rooms;
+          for (i in ref1) {
+            room = ref1[i];
+            _this.roomsText.innerHTML += "<option value=\"" + room.id + "\" " + (_this.lastRoom === room.id ? "selected=\"selected\"" : "") + ">" + room.name + " (" + room.playerCount + ")</option>";
+          }
+          return _this.join(_this.lastRoom ? _this.lastRoom : packet.data[0].id);
         };
       })(this));
       this.net.on(Network.Packets.Start, (function(_this) {
@@ -731,8 +787,7 @@
       console.log("Joining Room " + this.rooms[index].name);
       this.gamefield = this.rooms[index].options;
       if (this.inRoom && index !== this.lastRoom) {
-        this.socket.emit("leave");
-        this.socket.disconnect();
+        this.net.emit(Network.Packets.Leave);
         this.inRoom = false;
         setTimeout(((function(_this) {
           return function() {
@@ -742,16 +797,7 @@
         return;
       }
       console.log("Connecting ...");
-      if (this.rooms[index].socket) {
-        if (!this.rooms[index].socket.connected) {
-          this.rooms[index].socket.connect();
-        }
-        this.socket = this.rooms[index].socket;
-      } else {
-        this.rooms[index].socket = io.connect('/' + this.rooms[index].name);
-        this.setCallbacks(this.rooms[index].socket);
-      }
-      this.socket.emit("join");
+      this.net.emit(new JoinPacket(index));
       this.inRoom = true;
       this.lastRoom = index;
       return this.updatePlayer();

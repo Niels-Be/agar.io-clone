@@ -13,16 +13,8 @@ enum ElementType : int8_t {
 	ET_Ball,
 	ET_Food,
 	ET_Shoot,
-	ET_Obstracle
-};
-
-enum ElementEntryID : int8_t {
-	EEID_type,
-	EEID_color,
-	EEID_name,
-	EEID_pos,
-	EEID_size,
-	EEID_vel,
+	ET_Obstracle,
+	ET_Item
 };
 
 struct ElementData {

@@ -17,7 +17,7 @@ protected:
 
 	Vector mBoostVelocity;
 	double mBoostAcceleration = 0;
-
+	double mBoostFactor = 1;
 
 public:
 	MoveableElement(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, const String& mColor, double mSize,
@@ -26,9 +26,12 @@ public:
 
 	void setDirection(const Vector& direction, bool isMoving = true);
 
+	Vector getMoveDirection() const { return Vector::FromAngle((mVelocity + mBoostVelocity).angle()); }
+
 	bool isMoving() const { return mIsMoving; }
 
 	void setBoost(const Vector& velocity, double acceleration);
+	void setBoostFactor(double boost);
 
 	virtual double getSpeed() const;
 
