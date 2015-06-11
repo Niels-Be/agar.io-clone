@@ -625,6 +625,9 @@
         return function(packet) {
           var i, k, len, ref, ref1, room;
           _this.rooms = {};
+          if (!_this.lastRoom) {
+            _this.lastRoom = packet.data[packet.data.length - 1].id;
+          }
           ref = packet.data;
           for (k = 0, len = ref.length; k < len; k++) {
             room = ref[k];
@@ -637,7 +640,7 @@
             room = ref1[i];
             _this.roomsText.innerHTML += "<option value=\"" + room.id + "\" " + (_this.lastRoom === room.id ? "selected=\"selected\"" : "") + ">" + room.name + " (" + room.playerCount + ")</option>";
           }
-          return _this.join(_this.lastRoom ? _this.lastRoom : packet.data[0].id);
+          return _this.join(_this.lastRoom);
         };
       })(this));
       this.net.on(Network.Packets.Start, (function(_this) {

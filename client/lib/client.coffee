@@ -110,13 +110,15 @@ class Game
 
 		@net.on Network.Packets.GetLobby, (packet) =>
 			@rooms = {}
+			if not @lastRoom
+				@lastRoom = packet.data[packet.data.length-1].id
 			for room in packet.data
 				@rooms[room.id] = room
 			console.log("Rooms:", @rooms)
 			@roomsText.innerHTML = ""
 			for i,room of @rooms
 				@roomsText.innerHTML += "<option value=\""+room.id+"\" "+(if @lastRoom == room.id then "selected=\"selected\"" else "")+">"+room.name+" ("+room.playerCount+")</option>"
-			@join if @lastRoom then @lastRoom else packet.data[0].id
+			@join @lastRoom
 
 		@net.on Network.Packets.Start, =>
 			console.log("Game Started")
