@@ -280,7 +280,7 @@
         return pack;
       } catch (_error) {
         err = _error;
-        return console.log("Packet decode error", dv.getUint8(0), err);
+        return console.error("Packet decode error", dv.getUint8(0), err);
       }
     };
 
@@ -474,7 +474,8 @@
       0: "ball",
       1: "food",
       2: "shoot",
-      3: "obstracle"
+      3: "obstracle",
+      4: "item"
     };
 
     Game.defaultOptions = {
@@ -519,6 +520,11 @@
         textBorder: "#000000",
         textBorderSize: 3,
         defaultSize: 10
+      },
+      item: {
+        border: 5,
+        borderColor: "#6666FF",
+        fillColor: "#0000FF"
       }
     };
 

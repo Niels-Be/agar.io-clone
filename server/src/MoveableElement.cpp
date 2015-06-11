@@ -30,8 +30,8 @@ void MoveableElement::update(double timediff) {
 	if (mIsMoving) {
 		Vector vel = mDirection * a * timediff + mVelocity;
 
-		mVelocity.x = abs(vel.x) > abs(mMaxSpeed * mDirection.x) ? mMaxSpeed * mDirection.x : vel.x;
-		mVelocity.y = abs(vel.y) > abs(mMaxSpeed * mDirection.y) ? mMaxSpeed * mDirection.y : vel.y;
+		mVelocity.x = abs(vel.x) > abs(mMaxSpeed * mBoostFactor * mDirection.x) ? mMaxSpeed * mBoostFactor * mDirection.x : vel.x;
+		mVelocity.y = abs(vel.y) > abs(mMaxSpeed * mBoostFactor * mDirection.y) ? mMaxSpeed * mBoostFactor * mDirection.y : vel.y;
 		//printf("%lf, %lf  %lf\n", mVelocity.x, mVelocity.y, timediff);
 		changed();
 	} else if (mVelocity.x != 0 || mVelocity.y != 0) {
@@ -61,6 +61,10 @@ void MoveableElement::setDirection(const Vector& direction, bool isMoving) {
 void MoveableElement::setBoost(const Vector& velocity, double acceleration) {
 	mBoostVelocity = velocity;
 	mBoostAcceleration = acceleration;
+}
+
+void MoveableElement::setBoostFactor(double boost) {
+	mBoostFactor = boost;
 }
 
 double MoveableElement::getSpeed() const {

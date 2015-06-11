@@ -7,7 +7,7 @@
 
 
 #include "Element.h"
-#include "ItemEffekt.h"
+#include "ItemEffect.h"
 
 class Item : public Element {
 private:

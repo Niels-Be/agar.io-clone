@@ -79,6 +79,8 @@ private:
 	volatile uint32_t mFoodCounter = 0;
 	double mObstracleSpawnTimer = 0;
 	volatile uint32_t mObstracleCounter = 0;
+	double  mItemSpawnTimer = 0;
+	volatile uint32_t mItemCounter = 0;
 
 	double mElementUpdateTimer = 0;
 	volatile bool mUpdaterRunning = false;
@@ -120,6 +122,9 @@ private:
 	ElementPtr createFood();
 
 	ElementPtr createObstracle();
+
+	ElementPtr createItem();
+
 	void addElement(ElementPtr const& elem);
 
 	void onConnected(ClientPtr client);

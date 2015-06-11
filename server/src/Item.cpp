@@ -16,7 +16,7 @@ Item::Item(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition) :
 bool Item::tryEat(ElementPtr other) {
 	if(other->getType() == ET_Ball) {
 		BallPtr ball(std::dynamic_pointer_cast<Ball>(other));
-		ItemEffekt::create(mItemType)->applyEffekt(ball);
+		ball->applyEffect(ItemEffect::create(mItemType, ball));
 		mGamefield->destroyElement(std::dynamic_pointer_cast<Element>(shared_from_this()));
 		return true;
 	}

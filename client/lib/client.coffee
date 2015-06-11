@@ -13,10 +13,11 @@ class Game
 	inRoom: false
 
 	@ElementTypes:
-		0: "ball",
-		1: "food",
-		2: "shoot",
+		0: "ball"
+		1: "food"
+		2: "shoot"
 		3: "obstracle"
+		4: "item"
 
 	@defaultOptions:
 		viewPortScaleFactor: 0.01
@@ -61,6 +62,11 @@ class Game
 			textBorder: "#000000"
 			textBorderSize: 3
 			defaultSize: 10
+
+		item:
+			border: 5
+			borderColor: "#6666FF"
+			fillColor: "#0000FF"
 
 	player: 
 		x: 0

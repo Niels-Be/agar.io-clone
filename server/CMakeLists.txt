@@ -38,7 +38,7 @@ set(SOURCE_FILES
 
 include_directories(src)
 
-add_executable(server ${SOURCE_FILES} src/Network/AgarPackets.cpp src/Network/AgarPackets.h src/QuadTree.cpp src/QuadTree.h src/Item.cpp src/Item.h src/ItemEffekt.cpp src/ItemEffekt.h)
+add_executable(server ${SOURCE_FILES} src/Network/AgarPackets.cpp src/Network/AgarPackets.h src/QuadTree.cpp src/QuadTree.h src/Item.cpp src/Item.h src/ItemEffect.cpp src/ItemEffect.h)
 
 find_package(Boost COMPONENTS system REQUIRED)
 target_link_libraries(server ${Boost_LIBRARIES})

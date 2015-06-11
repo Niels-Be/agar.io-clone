@@ -13,6 +13,7 @@
 #include "Network/Server.h"
 #include "Network/AgarPackets.h"
 #include "QuadTree.h"
+#include "Item.h"
 
 #include <thread>
 
@@ -63,8 +64,10 @@ void Gamefield::destroyElement(ElementPtr const&  elem) {
 	}
 	if (elem->getType() == ET_Food)
 		mFoodCounter--;
-	if (elem->getType() == ET_Obstracle)
+	else if (elem->getType() == ET_Obstracle)
 		mObstracleCounter--;
+	else if (elem->getType() == ET_Item)
+		mItemCounter--;
 }
 
 
@@ -202,6 +205,12 @@ void Gamefield::update(double timediff) {
 			if (mObstracleCounter < mOptions.obstracle.max)
 				createObstracle();
 			mObstracleSpawnTimer = 0;
+		}
+		mItemSpawnTimer += timediff;
+		if (mItemSpawnTimer > 1 / mOptions.item.spawn) {
+			if (mItemCounter < mOptions.item.max)
+				createItem();
+			mItemSpawnTimer = 0;
 		}
 
 		vector<ElementPtr> tmpNew;
@@ -343,6 +352,13 @@ ElementPtr Gamefield::createObstracle() {
 	ElementPtr o = std::make_shared<Obstracle>(shared_from_this(), mElementIds++, generatePos());
 	addElement(o);
 	mObstracleCounter++;
+	return o;
+}
+
+ElementPtr Gamefield::createItem() {
+	ElementPtr o = std::make_shared<Item>(shared_from_this(), mElementIds++, generatePos());
+	addElement(o);
+	mItemCounter++;
 	return o;
 }
 

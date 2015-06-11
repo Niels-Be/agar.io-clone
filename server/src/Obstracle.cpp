@@ -14,11 +14,11 @@ Obstracle::Obstracle(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosit
 bool Obstracle::tryEat(ElementPtr other) {
 	if (other->getType() == ET_Ball && other->getMass() > mGamefield->getOptions().obstracle.needMass) {
 		BallPtr ball = std::dynamic_pointer_cast<Ball>(other);
-		int32_t mass = ball->getMass() / 2;
-		int splitcount = 10;
-		if (mass < 200)
-			splitcount = mass / 20;
-		int32_t newmass = mass / splitcount;
+		uint32_t mass = ball->getMass() / 2;
+		uint splitcount = 10;
+		if (mass < mGamefield->getOptions().player.minSplitMass*splitcount)
+			splitcount = mass / mGamefield->getOptions().player.minSplitMass;
+		uint32_t newmass = mass / splitcount;
 		for (double angle = 0; angle < 2 * M_PI; angle += (2 * M_PI) / splitcount) {
 			BallPtr b = ball->splitUp(Vector::FromAngle(angle));
 			b->setMass(newmass);

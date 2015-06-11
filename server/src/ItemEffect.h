@@ -20,41 +20,48 @@ enum ItemType : uint8_t {
 };
 
 
-class ItemEffekt {
+class ItemEffect {
 public:
 	template<class T>
 	struct Register {
 		Register(uint8_t type) {
-			ItemEffekt::registerEffekt(type, new FactoryImpl<T>());
+			ItemEffect::registerEffect(type, new FactoryImpl<T>());
 		}
 	};
 private:
 	class Factory {
 	public:
 		virtual ~Factory() {}
-		virtual ItemEffekt* create() = 0;
+		virtual ItemEffect* create(BallPtr const& ball) = 0;
 	};
 	template<class T>
 	class FactoryImpl : public Factory {
-		ItemEffekt* create() {
-			return new T();
+		ItemEffect* create(BallPtr const& ball) {
+			return new T(ball);
 		}
 	};
 	class Creator {
 	public:
-		unordered_map<uint8_t, unique_ptr<Factory> > Effekts;
+		unordered_map<uint8_t, unique_ptr<Factory> > Effects;
 		static Creator& get();
 	};
+
+protected:
+	BallPtr mBall;
 public:
-	virtual void applyEffekt(BallPtr ball) = 0;
-	virtual void update(double timediff) {}
+	ItemEffect(BallPtr const& ball) : mBall(ball) { }
+
+	//Returns false if the effect is over
+	virtual bool update(double timediff) { return false; }
+	//Returns false if the effect is over
+	virtual bool consume() { return false; }
 
 	virtual ItemType getType() const = 0;
 
-	static void registerEffekt(uint8_t type, Factory* factory);
-	static unique_ptr<ItemEffekt> create(uint8_t type);
+	static void registerEffect(uint8_t type, Factory* factory);
+	static ItemEffectPtr create(uint8_t type, BallPtr const& ball);
 };
-#define RegisterItemEffekt(id, ...) namespace { ItemEffekt::Register<__VA_ARGS__> __itemEffekt_##id(id); }
+#define RegisterItemEffect(id, ...) namespace { ItemEffect::Register<__VA_ARGS__> __itemEffect_##id(id); }
 
 
 #endif //SERVER_ITEMEFFEKT_H
