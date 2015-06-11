@@ -607,6 +607,10 @@
 
     Game.prototype.lastTick = 0;
 
+    Game.prototype.updateTimer = [];
+
+    Game.prototype.renderTimer = [];
+
     Game.prototype.name = "NoName";
 
     Game.prototype.rooms = {};
@@ -814,11 +818,22 @@
     Game.prototype.loop = function() {
       return window.requestAnimationFrame((function(_this) {
         return function(now) {
-          var timediff;
+          var renderTimer, start, timediff, updateTimer;
           timediff = now - _this.lastTick;
           if (_this.inRoom) {
+            start = performance.now();
             _this.update(timediff * 1e-3);
+            updateTimer = performance.now() - start;
             _this.render();
+            renderTimer = performance.now() - updateTimer - start;
+            _this.updateTimer.unshift(updateTimer);
+            if (_this.updateTimer.length > 60) {
+              _this.updateTimer.pop();
+            }
+            _this.renderTimer.unshift(renderTimer);
+            if (_this.renderTimer.length > 60) {
+              _this.renderTimer.pop();
+            }
           } else {
             _this.statusText.innerHTML = "FPS: -";
           }
@@ -906,7 +921,21 @@
     };
 
     Game.prototype.getStats = function() {
+      var i, k, l, len, len1, ref, ref1, renderTimer, updateTimer;
       this.net.emit(Network.Packets.GetStats);
+      updateTimer = 0;
+      ref = this.updateTimer;
+      for (k = 0, len = ref.length; k < len; k++) {
+        i = ref[k];
+        updateTimer += i;
+      }
+      renderTimer = 0;
+      ref1 = this.renderTimer;
+      for (l = 0, len1 = ref1.length; l < len1; l++) {
+        i = ref1[l];
+        renderTimer += i;
+      }
+      console.log("LocalStats", updateTimer / this.updateTimer.length, renderTimer / this.renderTimer.length);
     };
 
     Game.prototype.createRoom = function(name, options) {

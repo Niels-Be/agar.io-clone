@@ -85,6 +85,8 @@ class Game
 	fps: 0
 	fpstimer: 0
 	lastTick: 0
+	updateTimer: []
+	renderTimer: []
 
 	name: "NoName"
 	rooms: {}
@@ -251,8 +253,15 @@ class Game
 		window.requestAnimationFrame (now) =>
 			timediff = now - @lastTick
 			if @inRoom
+				start = performance.now()
 				@update timediff * 1e-3
+				updateTimer = performance.now() - start
 				@render()
+				renderTimer = performance.now() - updateTimer - start
+				@updateTimer.unshift updateTimer
+				@updateTimer.pop() if @updateTimer.length > 60
+				@renderTimer.unshift renderTimer
+				@renderTimer.pop() if @renderTimer.length > 60
 			else
 				@statusText.innerHTML = "FPS: -"
 			@lastTick = now
@@ -260,13 +269,17 @@ class Game
 
 	#pre calculate positions of the next frame to reduce lag
 	update: (timediff) ->
+		#update elements
 		for i,m of @elements
 			m.update timediff
+
+		#update player if nessesary
 		if @gameStarted
 			@updatePlayer()
 			if @target.changed
 				@net.emit new TargetPacket(@target.x, @target.y)
 				@target.changed = false
+
 
 		@fpstimer += timediff
 		@fps++
@@ -340,6 +353,12 @@ class Game
 	#debug method to get performance information from the server
 	getStats: ->
 		@net.emit Network.Packets.GetStats
+		updateTimer = 0
+		updateTimer += i for i in @updateTimer
+		renderTimer = 0
+		renderTimer += i for i in @renderTimer
+
+		console.log("LocalStats", updateTimer / @updateTimer.length, renderTimer / @renderTimer.length)
 		return
 
 	createRoom: (name, options) ->
