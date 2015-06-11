@@ -106,11 +106,16 @@ class JsonPacket extends Packet
 		super(@id)
 
 	getData: ->
-		strbuf = stringToUint(JSON.stringify(@data))
-		ar = new Uint8Array(1+strbuf.length)
-		ar.set([@id], 0)
-		ar.set(strbuf, 1)
-		ar.buffer
+		console.log("JsonData", @id, @data)
+		if @data
+			strbuf = stringToUint(JSON.stringify(@data))
+			ar = new Uint8Array(1+strbuf.length)
+			ar.set([@id], 0)
+			ar.set(strbuf, 1)
+			ar.buffer
+		else
+			super()
+
 
 	parseData: (data) ->
 		[pos, str] = Network.parseString(data, 1)

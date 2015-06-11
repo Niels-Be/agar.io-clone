@@ -30,7 +30,7 @@ void LobbyManager::createLobby(const String& name, const Options& options) {
 
 void LobbyManager::onConnected(ClientPtr client) {
 	//Set Callbacks
-	client->on(PID_Leave, std::bind(&LobbyManager::onGetLobbys, this, _1, _2));
+	client->on(PID_GetLobbies, std::bind(&LobbyManager::onGetLobbys, this, _1, _2));
 	client->on(PID_Join, std::bind(&LobbyManager::onJoin, this, _1, _2));
 }
 
@@ -39,11 +39,12 @@ void LobbyManager::onGetLobbys(ClientPtr client, PacketPtr packet) {
 	lobbys.reserve(mLobbys.size());
 	for(auto& it : mLobbys)
 		lobbys.emplace_back(Lobby{it.first, it.second->getName(), it.second->getPlayerCount(), it.second->getOptions()});
-	client->emit(make_shared<JSONPacket<PID_GetLobbys> >(lobbys));
+	client->emit(make_shared<LobbyPacket>(lobbys));
 }
 
 void LobbyManager::onJoin(ClientPtr client, PacketPtr packet) {
 	uint32_t id = **(std::dynamic_pointer_cast<JoinPacket>(packet));
+	printf("Client joind %d\n", id);
 	mLobbys[id]->onJoin(client, packet);
 }
 

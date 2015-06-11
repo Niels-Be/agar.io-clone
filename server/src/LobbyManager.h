@@ -12,7 +12,7 @@ class LobbyManager {
 private:
 	ServerPtr mServer;
 	unordered_map<uint32_t, GamefieldPtr> mLobbys;
-	volatile uint32_t mLobbyId;
+	volatile uint32_t mLobbyId = 1;
 
 public:
 	LobbyManager(const ServerPtr& mServer);

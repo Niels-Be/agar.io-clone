@@ -227,11 +227,16 @@
 
     JsonPacket.prototype.getData = function() {
       var ar, strbuf;
-      strbuf = stringToUint(JSON.stringify(this.data));
-      ar = new Uint8Array(1 + strbuf.length);
-      ar.set([this.id], 0);
-      ar.set(strbuf, 1);
-      return ar.buffer;
+      console.log("JsonData", this.id, this.data);
+      if (this.data) {
+        strbuf = stringToUint(JSON.stringify(this.data));
+        ar = new Uint8Array(1 + strbuf.length);
+        ar.set([this.id], 0);
+        ar.set(strbuf, 1);
+        return ar.buffer;
+      } else {
+        return JsonPacket.__super__.getData.call(this);
+      }
     };
 
     JsonPacket.prototype.parseData = function(data) {
@@ -253,7 +258,7 @@
       Start: 0x12,
       0x12: StartPacket.bind(void 0),
       GetLobby: 0x13,
-      0x13: JsonPacket.bind(0x13),
+      0x13: JsonPacket.bind(void 0, 0x13),
       UpdateTarget: 0x20,
       0x20: TargetPacket,
       SplitUp: 0x21,
@@ -606,40 +611,33 @@
 
     Game.prototype.rooms = {};
 
-    Game.prototype.lastRoom = 0;
-
     function Game(options) {
       this.options = extend(extend({}, Game.defaultOptions), options);
       this.grid = new Grid(this, this.options.grid);
       this.init();
-
-      /*
-      		@lobbySocket.emit "getRooms"
-      
-      		@lobbySocket.on "availableRooms", (rooms) =>
-      			@rooms = extend rooms, @rooms
-      			console.log("Rooms:", @rooms)
-      			@roomsText.innerHTML = ""
-      			for i,room of @rooms
-      				@roomsText.innerHTML += "<option value=\""+i+"\" "+(if @lastRoom == i then "selected=\"selected\"" else "")+">"+room.name+" ("+room.playercount+")</option>"
-      			@join @lastRoom
-      
-      		@lobbySocket.on "roomCreated", (status, err) =>
-      			if status
-      				@lobbySocket.emit "getRooms"
-      			else
-      				console.log("Room Create:", err)
-       */
       this.net.onConnect((function(_this) {
         return function() {
           console.log("Connected");
-          _this.net.emit(Network.Packets.Join);
-          _this.gamefield = {
-            width: 5000,
-            height: 5000
-          };
-          _this.inRoom = true;
-          return _this.updatePlayer();
+          return _this.net.emit(Network.Packets.GetLobby);
+        };
+      })(this));
+      this.net.on(Network.Packets.GetLobby, (function(_this) {
+        return function(packet) {
+          var i, k, len, ref, ref1, room;
+          _this.rooms = {};
+          ref = packet.data;
+          for (k = 0, len = ref.length; k < len; k++) {
+            room = ref[k];
+            _this.rooms[room.id] = room;
+          }
+          console.log("Rooms:", _this.rooms);
+          _this.roomsText.innerHTML = "";
+          ref1 = _this.rooms;
+          for (i in ref1) {
+            room = ref1[i];
+            _this.roomsText.innerHTML += "<option value=\"" + room.id + "\" " + (_this.lastRoom === room.id ? "selected=\"selected\"" : "") + ">" + room.name + " (" + room.playerCount + ")</option>";
+          }
+          return _this.join(_this.lastRoom ? _this.lastRoom : packet.data[0].id);
         };
       })(this));
       this.net.on(Network.Packets.Start, (function(_this) {
@@ -789,8 +787,7 @@
       console.log("Joining Room " + this.rooms[index].name);
       this.gamefield = this.rooms[index].options;
       if (this.inRoom && index !== this.lastRoom) {
-        this.socket.emit("leave");
-        this.socket.disconnect();
+        this.net.emit(Network.Packets.Leave);
         this.inRoom = false;
         setTimeout(((function(_this) {
           return function() {
@@ -800,16 +797,7 @@
         return;
       }
       console.log("Connecting ...");
-      if (this.rooms[index].socket) {
-        if (!this.rooms[index].socket.connected) {
-          this.rooms[index].socket.connect();
-        }
-        this.socket = this.rooms[index].socket;
-      } else {
-        this.rooms[index].socket = io.connect('/' + this.rooms[index].name);
-        this.setCallbacks(this.rooms[index].socket);
-      }
-      this.socket.emit("join");
+      this.net.emit(new JoinPacket(index));
       this.inRoom = true;
       this.lastRoom = index;
       return this.updatePlayer();

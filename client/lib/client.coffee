@@ -88,42 +88,35 @@ class Game
 
 	name: "NoName"
 	rooms: {}
-	lastRoom: 0
 
 	constructor: (options) ->
 		@options = extend (extend {}, Game.defaultOptions), options
 		@grid = new Grid(@, @options.grid)
 		@init()
 
-		###
-		@lobbySocket.emit "getRooms"
 
-		@lobbySocket.on "availableRooms", (rooms) =>
-			@rooms = extend rooms, @rooms
-			console.log("Rooms:", @rooms)
-			@roomsText.innerHTML = ""
-			for i,room of @rooms
-				@roomsText.innerHTML += "<option value=\""+i+"\" "+(if @lastRoom == i then "selected=\"selected\"" else "")+">"+room.name+" ("+room.playercount+")</option>"
-			@join @lastRoom
+		#@lobbySocket.on "roomCreated", (status, err) =>
+		#	if status
+		#		@lobbySocket.emit "getRooms"
+		#	else
+		#		console.log("Room Create:", err)
 
-		@lobbySocket.on "roomCreated", (status, err) =>
-			if status
-				@lobbySocket.emit "getRooms"
-			else
-				console.log("Room Create:", err)
-
-		###
 
 		#setup callbacks on the socket
 
 		@net.onConnect =>
 			console.log("Connected")
-			@net.emit Network.Packets.Join
-			@gamefield =
-				width: 5000
-				height: 5000
-			@inRoom = true
-			@updatePlayer()
+			@net.emit Network.Packets.GetLobby
+
+		@net.on Network.Packets.GetLobby, (packet) =>
+			@rooms = {}
+			for room in packet.data
+				@rooms[room.id] = room
+			console.log("Rooms:", @rooms)
+			@roomsText.innerHTML = ""
+			for i,room of @rooms
+				@roomsText.innerHTML += "<option value=\""+room.id+"\" "+(if @lastRoom == room.id then "selected=\"selected\"" else "")+">"+room.name+" ("+room.playerCount+")</option>"
+			@join if @lastRoom then @lastRoom else packet.data[0].id
 
 		@net.on Network.Packets.Start, =>
 			console.log("Game Started")
@@ -230,21 +223,14 @@ class Game
 		@gamefield = @rooms[index].options
 		#only disconnect if we switch the room
 		if @inRoom && index != @lastRoom
-			@socket.emit "leave"
-			@socket.disconnect()
+			@net.emit Network.Packets.Leave
 			@inRoom = false
 			setTimeout( (=> @join(index)), 10)
 			return
 
 		console.log("Connecting ...")
-		#check whether we have an existing connection to that room
-		if @rooms[index].socket
-			@rooms[index].socket.connect() unless @rooms[index].socket.connected
-			@socket = @rooms[index].socket
-		else
-			@rooms[index].socket = io.connect('/'+@rooms[index].name)
-			@setCallbacks(@rooms[index].socket)
-		@socket.emit "join"
+
+		@net.emit new JoinPacket(index)
 		@inRoom = true
 		@lastRoom = index
 		@updatePlayer()

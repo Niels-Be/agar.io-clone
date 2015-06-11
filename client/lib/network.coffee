@@ -8,7 +8,7 @@ class Network
 		Start: 0x12
 		0x12: StartPacket.bind(undefined)
 		GetLobby: 0x13
-		0x13: JsonPacket.bind(0x13)
+		0x13: JsonPacket.bind(undefined, 0x13)
 
 		UpdateTarget: 0x20
 		0x20: TargetPacket

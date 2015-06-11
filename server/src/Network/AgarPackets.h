@@ -13,7 +13,7 @@ enum PacketID : uint8_t {
 	PID_Join 			= 0x10,	//Empty / Struct
 	PID_Leave			= 0x11,	//Empty
 	PID_Start			= 0x12,	//Struct
-	PID_GetLobbys		= 0x13, //Empty
+	PID_GetLobbies 		= 0x13, //Empty
 
 	//Player Packets
 	PID_UpdateTarget  	= 0x20,	//Struct
@@ -146,7 +146,7 @@ protected:
 	}
 
 };
-
+typedef JSONPacket<PID_GetLobbies> LobbyPacket;
 typedef JSONPacket<PID_Debug> DebugPacket;
 
 
