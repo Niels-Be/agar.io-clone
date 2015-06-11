@@ -59,6 +59,8 @@ class Ball;
 typedef std::shared_ptr<Ball> BallPtr;
 class Shoot;
 typedef std::shared_ptr<Shoot> ShootPtr;
+class Obstracle;
+typedef std::shared_ptr<Obstracle> ObstraclePtr;
 class Item;
 typedef std::shared_ptr<Item> ItemPtr;
 class ItemEffect;

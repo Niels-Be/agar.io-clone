@@ -26,6 +26,8 @@ public:
 
 	void setDirection(const Vector& direction, bool isMoving = true);
 
+	Vector getMoveDirection() const { return Vector::FromAngle((mVelocity + mBoostVelocity).angle()); }
+
 	bool isMoving() const { return mIsMoving; }
 
 	void setBoost(const Vector& velocity, double acceleration);

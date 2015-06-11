@@ -20,8 +20,7 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-Gamefield::Gamefield(ServerPtr server) : mServer(server) {
-	mServer->setOnConnected(std::bind(&Gamefield::onConnected, this, _1));
+Gamefield::Gamefield(ServerPtr server, const String& name, const Options&  options) : mServer(server), mName(name), mOptions(options) {
 	//mQuadTree = make_shared<QuadTree>(Vector(0,0), Vector(mOptions.width,  mOptions.height), std::bind(&Gamefield::doIntersect, this, _1, _2));
 	mQuadTree = new QuadTree(Vector(0,0), Vector(mOptions.width,  mOptions.height), std::bind(&Gamefield::doIntersect, this, _1, _2));
 }
@@ -44,6 +43,15 @@ ShootPtr Gamefield::createShoot(const Vector& pos, const String& color, const Ve
 	addElement(s);
 	return s;
 }
+
+
+ObstraclePtr Gamefield::createObstracle(const Vector& position) {
+	ObstraclePtr o = std::make_shared<Obstracle>(shared_from_this(), mElementIds++, position);
+	addElement(o);
+	mObstracleCounter++;
+	return o;
+}
+
 
 void Gamefield::destroyElement(ElementPtr const&  elem) {
 	if(elem->isDeleted()) {
@@ -348,20 +356,12 @@ ElementPtr Gamefield::createFood() {
 	return f;
 }
 
-ElementPtr Gamefield::createObstracle() {
-	ElementPtr o = std::make_shared<Obstracle>(shared_from_this(), mElementIds++, generatePos());
-	addElement(o);
-	mObstracleCounter++;
-	return o;
-}
-
 ElementPtr Gamefield::createItem() {
 	ElementPtr o = std::make_shared<Item>(shared_from_this(), mElementIds++, generatePos());
 	addElement(o);
 	mItemCounter++;
 	return o;
 }
-
 
 void Gamefield::addElement(ElementPtr const& elem) {
 	{
@@ -373,15 +373,6 @@ void Gamefield::addElement(ElementPtr const& elem) {
 		lock_guard<mutex> _lock(mMutexNewElements);
 		mNewElements.push_back(elem);
 	}
-}
-
-void Gamefield::onConnected(ClientPtr client) {
-	//Set Callbacks
-	client->on(PID_Join, std::bind(&Gamefield::onJoin, this, _1, _2));
-	client->on(PID_Leave, std::bind(&Gamefield::onLeave, this, _1, _2));
-	client->on(PID_Start, std::bind(&Gamefield::onStart, this, _1, _2));
-	client->on(PID_GetStats, std::bind(&Gamefield::onGetStats, this, _1, _2));
-	client->setOnDisconnect(std::bind(&Gamefield::onDisconnected, this, _1));
 }
 
 void Gamefield::onDisconnected(ClientPtr client) {
@@ -398,6 +389,11 @@ void Gamefield::onDisconnected(ClientPtr client) {
 }
 
 void Gamefield::onJoin(ClientPtr client, PacketPtr packet) {
+	//Set Callbacks
+	client->on(PID_Leave, std::bind(&Gamefield::onLeave, this, _1, _2));
+	client->on(PID_Start, std::bind(&Gamefield::onStart, this, _1, _2));
+	client->on(PID_GetStats, std::bind(&Gamefield::onGetStats, this, _1, _2));
+	client->setOnDisconnect(std::bind(&Gamefield::onDisconnected, this, _1));
 	//Send all elements
 	client->emit(std::make_shared<SetElementsPacket>(mElements));
 	//Add to update queue
@@ -417,9 +413,9 @@ void Gamefield::onLeave(ClientPtr client, PacketPtr packet) {
 
 void Gamefield::onStart(ClientPtr client, PacketPtr packet) {
 	auto p = std::dynamic_pointer_cast<StartPacket >(packet);
-	//TODO color
+	String color = mOptions.player.color[rand()%mOptions.player.color.size()];
 	printf("Player %s joind the game\n", p->Name.c_str());
-	PlayerPtr ply = std::make_shared<Player>(shared_from_this(), client, "#FF0000", p->Name);
+	PlayerPtr ply = std::make_shared<Player>(shared_from_this(), client, color, p->Name);
 	mPlayer[client->getId()] = ply;
 	ply->addBall(createBall(ply));
 	ply->updateClient();

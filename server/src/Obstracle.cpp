@@ -5,9 +5,10 @@
 #include "Obstracle.h"
 #include "Gamefield.h"
 #include "Ball.h"
+#include "Shoot.h"
 
 Obstracle::Obstracle(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition) :
-		Element(mGamefield, mId, mPosition, mGamefield->getOptions().obstracle.color,
+		MoveableElement(mGamefield, mId, mPosition, mGamefield->getOptions().obstracle.color,
 				mGamefield->getOptions().obstracle.size) {
 }
 
@@ -30,6 +31,9 @@ bool Obstracle::tryEat(ElementPtr other) {
 		mEatCount++;
 		if (mEatCount >= mGamefield->getOptions().obstracle.eatCount) {
 			//shoot out new Obstracle
+			ShootPtr shoot = std::dynamic_pointer_cast<Shoot>(other);
+			ObstraclePtr o = mGamefield->createObstracle(mPosition);
+			o->setBoost(shoot->getMoveDirection() * mGamefield->getOptions().shoot.speed, mGamefield->getOptions().shoot.acceleration);
 			mEatCount = 0;
 		}
 		//Grow up to a size of 150%

@@ -1,5 +1,5 @@
 (function() {
-  var Ball, Game, Grid, Network, Packet, PlayerUpdatePacket, SetElementsPacket, StartPacket, StatsPacket, TargetPacket, UpdateElementsPacket, extend, stringToUint, uintToString,
+  var Ball, Game, Grid, JoinPacket, JsonPacket, Network, Packet, PlayerUpdatePacket, SetElementsPacket, StartPacket, StatsPacket, TargetPacket, UpdateElementsPacket, extend, stringToUint, uintToString,
     extend1 = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -48,6 +48,27 @@
     return Packet;
 
   })();
+
+  JoinPacket = (function(superClass) {
+    extend1(JoinPacket, superClass);
+
+    function JoinPacket(lobby) {
+      this.lobby = lobby;
+      JoinPacket.__super__.constructor.call(this, 0x10);
+    }
+
+    JoinPacket.prototype.getData = function() {
+      var ar, dv;
+      ar = new ArrayBuffer(1 + 4);
+      dv = new DataView(ar);
+      dv.setUint8(0, this.id);
+      dv.setUint32(1, this.lobby, true);
+      return ar;
+    };
+
+    return JoinPacket;
+
+  })(Packet);
 
   StartPacket = (function(superClass) {
     extend1(StartPacket, superClass);
@@ -187,10 +208,39 @@
       this.update = data.getFloat64(1, true);
       this.collision = data.getFloat64(1 + 8, true);
       this.other = data.getFloat64(1 + 8 + 8, true);
-      return this.elementCount = data.getUint32(1 + 8 + 8 + 8, true);
+      this.elementCount = data.getUint32(1 + 8 + 8 + 8, true);
+      return this.playerCount = data.getUint32(1 + 8 + 8 + 8 + 4, true);
     };
 
     return StatsPacket;
+
+  })(Packet);
+
+  JsonPacket = (function(superClass) {
+    extend1(JsonPacket, superClass);
+
+    function JsonPacket(id1, data1) {
+      this.id = id1;
+      this.data = data1;
+      JsonPacket.__super__.constructor.call(this, this.id);
+    }
+
+    JsonPacket.prototype.getData = function() {
+      var ar, strbuf;
+      strbuf = stringToUint(JSON.stringify(this.data));
+      ar = new Uint8Array(1 + strbuf.length);
+      ar.set([this.id], 0);
+      ar.set(strbuf, 1);
+      return ar.buffer;
+    };
+
+    JsonPacket.prototype.parseData = function(data) {
+      var pos, ref, str;
+      ref = Network.parseString(data, 1), pos = ref[0], str = ref[1];
+      return this.data = JSON.parse(str);
+    };
+
+    return JsonPacket;
 
   })(Packet);
 
@@ -202,6 +252,8 @@
       0x11: Packet.bind(void 0, 0x11),
       Start: 0x12,
       0x12: StartPacket.bind(void 0),
+      GetLobby: 0x13,
+      0x13: JsonPacket.bind(0x13),
       UpdateTarget: 0x20,
       0x20: TargetPacket,
       SplitUp: 0x21,
