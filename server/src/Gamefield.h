@@ -97,7 +97,7 @@ private:
 	std::thread mUpdaterThread;
 
 	FPSControl mFPSControl;
-	mutex mMutexElements;
+	//mutex mMutexElements;
 	mutex mMutexNewElements;
 	mutex mMutexDeletedElements;
 

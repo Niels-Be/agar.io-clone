@@ -12,6 +12,7 @@
 
 #include <iostream>
 
+// Use Websockets with Boost support
 typedef websocketpp::server<websocketpp::config::asio> WebSocket;
 
 typedef WebSocket::message_ptr message_ptr;
@@ -42,8 +43,8 @@ private:
 	void onMessage(connection_hdl hdl, message_ptr msg);
 	void onClose(connection_hdl hdl);
 
-	static connection_hdl toHdl(uint64_t id);
-	static uint64_t toClientId(connection_hdl id);
+	static inline connection_hdl toHdl(uint64_t id);
+	static inline uint64_t toClientId(connection_hdl id);
 };
 
 
@@ -82,7 +83,7 @@ void Server::ServerImpl::emit(uint64_t id, String&& message) {
 	try {
 		server.send(toHdl(id), message, websocketpp::frame::opcode::BINARY);
 	} catch (websocketpp::exception& e) {
-		std::cerr << "WebSocket Error:" << e.what() << std::endl;
+		fprintf(stderr, "WebSocket Error on Client %ld: %s\n", id, e.what());
 	}
 }
 
@@ -92,8 +93,8 @@ void Server::ServerImpl::emit(String&& message) {
 }
 
 void Server::ServerImpl::onOpen(connection_hdl hdl) {
-	ClientPtr client = std::make_shared<Client>(uint64_t(hdl.lock().get()), mBase);
-	mClients[toClientId(hdl)] = client;
+	ClientPtr client = std::make_shared<Client>(toClientId(hdl), mBase);
+	mClients[client->getId()] = client;
 	if(mBase->mOnConnectCallback)
 		mBase->mOnConnectCallback(client);
 }
@@ -102,9 +103,11 @@ void Server::ServerImpl::onMessage(connection_hdl hdl, message_ptr msg) {
 	const String& data = msg->get_payload();
 	//First Byte contains id
 	PacketPtr packet = PacketManager::get().create(data[0]);
-	//Parse Data without id
-	packet->parseData(data.c_str()+1, data.length()-1);
-	mClients[toClientId(hdl)]->handlePacket(packet);
+	if(packet) {
+		//Parse Data without id
+		packet->parseData(data.c_str() + 1, data.length() - 1);
+		mClients[toClientId(hdl)]->handlePacket(packet);
+	}
 }
 
 void Server::ServerImpl::onClose(connection_hdl hdl) {
@@ -114,7 +117,6 @@ void Server::ServerImpl::onClose(connection_hdl hdl) {
 
 
 connection_hdl Server::ServerImpl::toHdl(uint64_t id) {
-	//TODO this will end in memory leaks
 	WebSocket::connection_type* con = (WebSocket::connection_type*)id;
 	return connection_hdl(con->shared_from_this());
 }

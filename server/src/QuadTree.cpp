@@ -60,9 +60,11 @@ bool QuadTree::add(QuadTreeNodePtr elem) {
 		if(mIsLeaf && mElements.size() < mMaxAmount) { //Still some space left
 			{
 				lock_guard<mutex> _lock(mMutex);
-				/*for(QuadTreeNodePtr& e : mElements)
+#ifdef DEBUG
+				for(QuadTreeNodePtr& e : mElements)
 					if(e == elem)
-						printf("Double Element in TreeNode!!! %p\n", e);*/
+						printf("Double Element in TreeNode!!! %p\n", e);
+#endif
 
 				mElements.push_back(elem);
 			}
@@ -78,9 +80,11 @@ bool QuadTree::add(QuadTreeNodePtr elem) {
 				//Otherwise add it to this node anyway (it is probably to big for the children)
 				{
 					lock_guard<mutex> _lock(mMutex);
-					/*for(QuadTreeNodePtr& e : mElements)
+#ifdef DEBUG
+					for(QuadTreeNodePtr& e : mElements)
 						if(e == elem)
-							printf("Double2 Element in TreeNode!!! %p\n", e);*/
+							printf("Double2 Element in TreeNode!!! %p\n", e);
+#endif
 
 					mElements.push_back(elem);
 				}
@@ -161,7 +165,12 @@ void QuadTree::checkCollision(QuadTreeNodePtr e1) {
 		}
 		//Compare with own elements
 		for(QuadTreeNodePtr e2 : oldList) {
-			assert(e1 != e2);
+			if(e1 == e2) {
+#ifdef DEBUG
+				fprintf(stderr, "QuadTree compare with same element %p\n", e1);
+#endif
+				continue;
+			}
 			if(e1->isDeleted() || e2->isDeleted()) continue;
 			if(e1->intersect(e2)) {
 				mCollisionCallback(e1, e2);
@@ -208,7 +217,7 @@ void QuadTree::split() {
 void QuadTree::combine() {
 	if(!mIsLeaf) {
 		if(getElementCount() < mMaxAmount / 2) {
-			printf("Combining Nodes %ld Elems: %ld\n", getChildCount(), getElementCount());
+			//printf("Combining Nodes %ld Elems: %ld\n", getChildCount(), getElementCount());
 			for(int i = 0; i < 4; i++)
 				mChilds[i]->combine();
 
@@ -223,7 +232,7 @@ void QuadTree::combine() {
 			for(QuadTreeNodePtr& e : mElements)
 				e->mRegion = this;
 			mIsLeaf = true;
-			printf("Done Combining %ld Elems: %ld\n", getChildCount(), getElementCount());
+			//printf("Done Combining %ld Elems: %ld\n", getChildCount(), getElementCount());
 		}
 	}
 }
@@ -301,7 +310,7 @@ QuadTreePtr QuadTree::findWest() const {
 }
 
 list<QuadTreePtr> QuadTree::getNeighbours() const {
-	if (!mParent) //head as no neigbours
+	if (!mParent) //head as no neighbours
 		return list<QuadTreePtr>();
 
 	QuadTreePtr northeast;
@@ -360,7 +369,6 @@ void QuadTreeNode::updateRegion() {
 		if(!mRegion->getHead()->add(this)) {
 			//Should never appear
 			fprintf(stderr, "Can not find Region for position %.0lf, %.0lf\n", mPosition.x, mPosition.y);
-			assert(false);
 		}
 	}
 }

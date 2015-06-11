@@ -10,8 +10,13 @@ PacketManager& PacketManager::get() {
 }
 
 PacketPtr PacketManager::create(uint8_t id) {
-	assert(mPackets.find(id) != mPackets.end());
-	return mPackets[id]->create();
+	if(mPackets.find(id) != mPackets.end())
+		return mPackets[id]->create();
+	else {
+		fprintf(stderr, "Unknowen Packet ID %d\n", id);
+		return PacketPtr();
+	}
+
 }
 
 void PacketManager::registerPacket(uint8_t id, PacketManager::Factory* factory) {

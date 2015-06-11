@@ -8,6 +8,9 @@ using namespace std;
 
 int main() {
 	cout << "Hello, World!" << endl;
+#ifdef DEBUG
+	cout << "Running in Debug Mode!" << endl;
+#endif
 
 	ServerPtr s(new Server());
 

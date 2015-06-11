@@ -7,7 +7,6 @@
 
 #include <memory>
 #include <functional>
-#include <assert.h>
 #include <mutex>
 
 using std::function;
@@ -38,6 +37,18 @@ using std::min;
 //#define min(a, b) ((a) < (b) ? (a) : (b))
 //#define max(a, b) ((a) > (b) ? (a) : (b))
 #define sign(x) (((x) > 0) ? 1 : (((x) < 0) ? -1 : 0))
+
+#ifdef DEBUG
+#include <assert.h>
+
+#undef assert
+#define assert(expr, ...)							\
+  ((expr)								\
+   ? __ASSERT_VOID_CAST (0)						\
+   : __assert_fail (__STRING(expr #__VA_ARGS__), __FILE__, __LINE__, __ASSERT_FUNCTION))
+#else
+#define assert(expr, ...)
+#endif
 
 
 class Packet;
