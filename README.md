@@ -3,7 +3,7 @@ Agar.io Clone
 
 A Agar.io clone built with Websocket and HTML5 Canvas on top of a C++ Server.
 
-![Image](http://i.imgur.com/Ol8qtXb.jpg)
+![Image](http://fs1.directupload.net/images/150613/nrhpwl7u.png)
 
 ## Live Demo
 [agar.waeco-soft.com](http://agar.waeco-soft.com/)
