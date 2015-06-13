@@ -14,4 +14,6 @@ TODO List
   - Not Hungry
   - Lesser Colldown on Split
 
-7. Cooldown on Split
+7. Show picked up Items in UI and assign a hotkey for usage
+8. ~~Cooldown on Split~~
+9. Chat
