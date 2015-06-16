@@ -68,6 +68,7 @@ void Ball::setMass(uint32_t mass) {
 	mSize = mGamefield->getOptions().player.defaultSize + 150.0 * log((mass + 150.0) / 150.0);
 	mMaxSpeed = mGamefield->getOptions().player.maxSpeed * exp(-mGamefield->getOptions().player.speedPenalty * mass);
 	Element::setMass(mass);
+	updateRegion();
 }
 
 bool Ball::tryEat(ElementPtr other) {

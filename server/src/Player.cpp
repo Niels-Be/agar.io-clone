@@ -67,7 +67,7 @@ void Player::removeBall(uint32_t ball) {
 	}
 }
 
-void Player::update(double /*timediff*/) {
+void Player::update(double timediff) {
 	mPosition = Vector::ZERO;
 	double size = 0;
 	//Center of Player in the middle of its balls weighted by size
@@ -77,10 +77,15 @@ void Player::update(double /*timediff*/) {
 	}
 	mPosition /= size;
 	setTarget(mTarget);
+
+	mSplitCooldown -= timediff;
 }
 
 void Player::onSplitUp(ClientPtr client, PacketPtr packet) {
-	splitUp(mTarget);
+	if(mSplitCooldown <= 0) {
+		splitUp(mTarget);
+		mSplitCooldown = mGamefield->getOptions().player.splitCooldown;
+	}
 }
 
 void Player::onShoot(ClientPtr client, PacketPtr packet) {

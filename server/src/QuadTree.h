@@ -15,12 +15,13 @@ protected:
 	double mSize = 0;
 
 private:
-	QuadTree* mRegion = NULL;
+	QuadTreePtr mRegion = NULL;
+	QuadTreePtr mRootRegion;
 	volatile bool mDeleted = false;
 
 public:
-	QuadTreeNode() {}
-	QuadTreeNode(const Vector& mPosition, double mSize) : mPosition(mPosition), mSize(mSize) { }
+	QuadTreeNode(QuadTreePtr mRootRegion) : mRootRegion(mRootRegion) {}
+	QuadTreeNode(QuadTreePtr mRootRegion, const Vector& mPosition, double mSize) : mPosition(mPosition), mSize(mSize), mRootRegion(mRootRegion) { }
 
 	virtual ~QuadTreeNode() {}
 
@@ -72,6 +73,8 @@ public:
 	size_t getElementCount() const;
 	size_t getChildCount() const;
 private:
+
+	void _add(QuadTreeNodePtr elem);
 
 	QuadTreePtr getHead() { return mParent ? mParent->getHead() : this; }
 

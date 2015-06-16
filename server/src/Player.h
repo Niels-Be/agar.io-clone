@@ -18,6 +18,8 @@ private:
 	Vector mTarget;
 	String mName;
 
+	double mSplitCooldown = 0;
+
 public:
 
 

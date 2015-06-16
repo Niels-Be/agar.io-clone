@@ -50,9 +50,7 @@ private:
 
 public:
 	Element(GamefieldPtr mGamefield, uint32_t mId, const Vector& mPosition, const String& mColor, double mSize,
-			uint32_t mMass = 0) :
-			QuadTreeNode(mPosition, mSize),
-			mGamefield(mGamefield), mId(mId), mColor(mColor), mMass(mMass) { }
+			uint32_t mMass = 0);
 	virtual ~Element() { /*printf("Element(%s) %d Destruct at %.0lf, %.0lf\n", mColor.c_str(), mId, mPosition.x, mPosition.y);*/ }
 
 

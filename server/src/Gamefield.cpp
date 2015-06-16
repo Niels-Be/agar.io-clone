@@ -263,14 +263,16 @@ void Gamefield::update(double timediff) {
 
 	timer::duration timerOther = timer::now().time_since_epoch() - timerCollision - timerUpdate - timerStart;
 
-	//Update Timer
-	mFPSControl.timerUpdate.push_back(timerUpdate);
-	mFPSControl.timerCollision.push_back(timerCollision);
-	mFPSControl.timerOther.push_back(timerOther);
-	if(mFPSControl.timerUpdate.size() > 60) {
-		mFPSControl.timerUpdate.pop_front();
-		mFPSControl.timerCollision.pop_front();
-		mFPSControl.timerOther.pop_front();
+	{ //Update Timer
+		lock_guard<mutex> _lock(mFPSControl.Mutex);
+		mFPSControl.timerUpdate.push_back(timerUpdate);
+		mFPSControl.timerCollision.push_back(timerCollision);
+		mFPSControl.timerOther.push_back(timerOther);
+		if (mFPSControl.timerUpdate.size() > 60) {
+			mFPSControl.timerUpdate.pop_front();
+			mFPSControl.timerCollision.pop_front();
+			mFPSControl.timerOther.pop_front();
+		}
 	}
 	//printf("End of Frame\n");
 }
@@ -381,13 +383,16 @@ void Gamefield::onGetStats(ClientPtr client, PacketPtr packet) {
 	double timerUpdate = 0;
 	double timerCollision = 0;
 	double timerOther = 0;
-	for(auto it : mFPSControl.timerUpdate)
-		timerUpdate += std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(it).count() / mFPSControl.timerUpdate.size();
-	for(auto it : mFPSControl.timerCollision)
-		timerCollision += std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(it).count() / mFPSControl.timerCollision.size();
-	for(auto it : mFPSControl.timerOther)
-		timerOther += std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(it).count() / mFPSControl.timerOther.size();
+	{
+		lock_guard<mutex> _lock(mFPSControl.Mutex);
 
+		for (auto it : mFPSControl.timerUpdate)
+			timerUpdate += std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(it).count() / mFPSControl.timerUpdate.size();
+		for (auto it : mFPSControl.timerCollision)
+			timerCollision += std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(it).count() / mFPSControl.timerCollision.size();
+		for (auto it : mFPSControl.timerOther)
+			timerOther += std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(it).count() / mFPSControl.timerOther.size();
+	}
 	printf("Timings: Update: %lf Collision: %lf Other: %lf Elements: %ld QuadTreeNodes: %ld\n", timerUpdate, timerCollision, timerOther, mElements.size(), mQuadTree->getChildCount());
 	if(client)
 		client->emit(std::make_shared<StatsPacket>(timerUpdate, timerCollision, timerOther, (uint32_t)mElements.size(), (uint32_t)mPlayer.size()));

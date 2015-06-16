@@ -32,6 +32,7 @@ struct Options {
 		double speedPenalty = 0.005;
 		double eatFactor = 1.2;
 		uint32_t minSplitMass = 20;
+		double splitCooldown = 5; // sec
 		uint32_t starveOffset = 250;
 		double starveMassFactor = 0.001; //Percent of mass per sec
 	} player;
@@ -43,7 +44,7 @@ struct Options {
 	} shoot;
 	struct Obstracle {
 		String color = "#00FF00";
-		double spawn = 0.05;
+		double spawn = 0.05; //per sec
 		uint32_t max = 7;
 		double size = 100;
 		uint32_t needMass = 200;
@@ -52,7 +53,7 @@ struct Options {
 	struct Item {
 		String color = "#0000FF";
 		double size = 25;
-		double spawn = 0.1;
+		double spawn = 0.1; // per sec
 		uint32_t max = 5;
 	} item;
 };
@@ -65,6 +66,7 @@ DECLARE_JSON_STRUCT(Options, width, height, food, player, shoot, obstracle, item
 
 
 struct FPSControl {
+	std::mutex Mutex;
 	list<std::chrono::high_resolution_clock::duration> timerUpdate;
 	list<std::chrono::high_resolution_clock::duration> timerCollision;
 	list<std::chrono::high_resolution_clock::duration> timerOther;
@@ -108,6 +110,7 @@ public:
 	const String& getName() const { return mName; }
 	inline const Options& getOptions() const { return mOptions; }
 	uint32_t getPlayerCount() const { return mPlayer.size(); }
+	QuadTreePtr getQuadTree() const { return mQuadTree; }
 
 	BallPtr createBall(PlayerPtr const&  player) { return createBall(player, generatePos()); }
 	BallPtr createBall(PlayerPtr const&  player, const Vector& position);

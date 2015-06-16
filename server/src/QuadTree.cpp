@@ -57,41 +57,16 @@ void QuadTree::doCollisionCheck() {
 
 bool QuadTree::add(QuadTreeNodePtr elem) {
 	if(isInside(elem)) { //Contains point and fits inside
-		if(mIsLeaf && mElements.size() < mMaxAmount) { //Still some space left
-			{
-				lock_guard<mutex> _lock(mMutex);
-#ifdef DEBUG
-				for(QuadTreeNodePtr& e : mElements)
-					if(e == elem)
-						printf("Double Element in TreeNode!!! %p\n", e);
-#endif
-
-				mElements.push_back(elem);
-			}
-			if(elem->mRegion)
-				elem->mRegion->remove(elem);
-			elem->mRegion = this;
-			//printf("Added to Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
+		if(mIsLeaf && mElements.size() < mMaxAmount) {
+			//Still some space left
+			_add(elem);
 		} else { // No space left
 			if(mIsLeaf)
 				split();
 			//Try to add it to a child
 			if(!(mChilds[0]->add(elem) || mChilds[1]->add(elem) || mChilds[2]->add(elem) || mChilds[3]->add(elem))) {
 				//Otherwise add it to this node anyway (it is probably to big for the children)
-				{
-					lock_guard<mutex> _lock(mMutex);
-#ifdef DEBUG
-					for(QuadTreeNodePtr& e : mElements)
-						if(e == elem)
-							printf("Double2 Element in TreeNode!!! %p\n", e);
-#endif
-
-					mElements.push_back(elem);
-				}
-				if(elem->mRegion)
-					elem->mRegion->remove(elem);
-				elem->mRegion = this;
-				//printf("Added to own Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
+				_add(elem);
 			}
 		}
 		return true;
@@ -154,6 +129,26 @@ size_t QuadTree::getChildCount() const {
 						 mChilds[1]->getChildCount() +
 						 mChilds[2]->getChildCount() +
 						 mChilds[3]->getChildCount();
+}
+
+
+void QuadTree::_add(QuadTreeNodePtr elem) {
+	if(elem->mRegion != this) {
+		{
+			lock_guard<mutex> _lock(mMutex);
+#ifdef DEBUG
+			for (QuadTreeNodePtr& e : mElements)
+				if (e == elem)
+					printf("Double Element in TreeNode!!! %p\n", e);
+#endif
+
+			mElements.push_back(elem);
+		}
+		if (elem->mRegion)
+			elem->mRegion->remove(elem);
+		elem->mRegion = this;
+		//printf("Added to own Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
+	}
 }
 
 void QuadTree::checkCollision(QuadTreeNodePtr e1) {
@@ -366,7 +361,7 @@ void QuadTreeNode::updateRegion() {
 			if (region->add(this))
 				return;
 		}*/
-		if(!mRegion->getHead()->add(this)) {
+		if(!mRootRegion->add(this)) {
 			//Should never appear
 			fprintf(stderr, "Can not find Region for position %.0lf, %.0lf\n", mPosition.x, mPosition.y);
 		}
