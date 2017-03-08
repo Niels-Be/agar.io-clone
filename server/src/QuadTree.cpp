@@ -1,7 +1,7 @@
 //
 // Created by niels on 07.06.15.
 // Edits Performed by Mostafa Okasha to improve the documentation of this file
-
+// Edits were performed on March 07 and March 08 - 2017
 #include "QuadTree.h"
 
 QuadTree::QuadTree(const Vector& mPosition, const Vector& mSize, std::function<void(QuadTreeNodePtr, QuadTreeNodePtr)> mCollisionCallback, size_t mMaxAmount, QuadTreePtr mParent)  :
