@@ -1,6 +1,6 @@
 //
 // Created by niels on 07.06.15.
-//
+// Edits Performed by Mostafa Okasha to improve the documentation of this file
 
 #include "QuadTree.h"
 
