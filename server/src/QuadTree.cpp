@@ -170,7 +170,7 @@ bool QuadTree::remove(QuadTreeNodePtr elem) {      // attempt and remove elem
 size_t QuadTree::getElementCount() const {
 	if(mIsLeaf)                       // if the elemeent is the last node then the total size is it's size
 		return mElements.size();
-	return mElements.size() +                       //sums all the children and returns that value
+	return mElements.size() +                       //sums all the number of elements and returns that value
 		   mChilds[0]->getElementCount() +
 		   mChilds[1]->getElementCount() +
 		   mChilds[2]->getElementCount() +
@@ -180,10 +180,10 @@ size_t QuadTree::getElementCount() const {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+   returns the total number of existing children under that node
 */
 size_t QuadTree::getChildCount() const {
-	return mIsLeaf ? 1 : 1 +
+	return mIsLeaf ? 1 : 1 +                                //returns 1 if the node is the last node otherwise gets the total number of children
 						 mChilds[0]->getChildCount() +
 						 mChilds[1]->getChildCount() +
 						 mChilds[2]->getChildCount() +
@@ -192,7 +192,7 @@ size_t QuadTree::getChildCount() const {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+   This function is used under the doCollisionCheck and only checks for intersections
 */
 void QuadTree::checkCollision(QuadTreeNodePtr e1) {
 	if(intersects(e1)) { //Only check if the element actually intersects this area
@@ -221,7 +221,7 @@ void QuadTree::checkCollision(QuadTreeNodePtr e1) {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+  This function creates a new set of children in all 4 opposing vectors that will cause the mesh of the vectors to look exactly the same
 */
 void QuadTree::split() {
 	if(mIsLeaf) {
@@ -233,8 +233,8 @@ void QuadTree::split() {
 		mChilds[NE] = new QuadTree(mPosition + Vector(mSize.x/2, 0), mSize/2, mCollisionCallback, mMaxAmount, this);
 		mChilds[SW] = new QuadTree(mPosition + Vector(0, mSize.y/2), mSize/2, mCollisionCallback, mMaxAmount, this);
 		mChilds[SE] = new QuadTree(mPosition + mSize/2, mSize/2, mCollisionCallback, mMaxAmount, this);
-
-		vector<QuadTreeNodePtr> oldList;
+        // creates 4 children in 4 different directions (hence the different addition)
+		vector<QuadTreeNodePtr> oldList;  //creates a vector that will map these values
 		{
 			lock_guard<mutex> _lock(mMutex);
 			oldList = std::move(mElements);
@@ -253,24 +253,28 @@ void QuadTree::split() {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+   combines two nodes if the node will have the capacity to do so
 */
 void QuadTree::combine() {
 	if(!mIsLeaf) {
 		if(getElementCount() < mMaxAmount / 2) {
+		//this is very important to note. since it's combining two elements, the total element size 
+		// cannot surpass half of the size of that element so that both elements can successfully fit inside
 			printf("Combining Nodes %ld Elems: %ld\n", getChildCount(), getElementCount());
-			for(int i = 0; i < 4; i++)
+			for(int i = 0; i < 4; i++) //combines all 4 children and all subsequent children of each child. That's why the function calls itself
+										// recursively
 				mChilds[i]->combine();
 
-			lock_guard<mutex> _lock(mMutex);
+			lock_guard<mutex> _lock(mMutex); // lock and load
 			for(int i = 0; i < 4; i++)
 			{
 				lock_guard<mutex> _lock(mChilds[i]->mMutex);
+				// Inserts the elements into each child as it combines everything
 				mElements.insert(mElements.end(), mChilds[i]->mElements.begin(), mChilds[i]->mElements.end());
-				delete mChilds[i];
-				mChilds[i] = NULL;
+				delete mChilds[i]; //delete all the elements after adding them together
+				mChilds[i] = NULL;  // set the elements to being empty
 			}
-			for(QuadTreeNodePtr& e : mElements)
+			for(QuadTreeNodePtr& e : mElements) //checks to see if combination was successful
 				e->mRegion = this;
 			mIsLeaf = true;
 			printf("Done Combining %ld Elems: %ld\n", getChildCount(), getElementCount());
@@ -280,7 +284,7 @@ void QuadTree::combine() {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+ Checks to see if the element exists inside the node and if so then it returns the position of that element in each direction
 */
 bool QuadTree::isInside(QuadTreeNodePtr a) const {
 	return a->getPosition().x >= mPosition.x && a->getPosition().x <= mPosition.x+mSize.x &&
@@ -290,7 +294,7 @@ bool QuadTree::isInside(QuadTreeNodePtr a) const {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+  Creturns the value of intersection level between two elements
 */
 bool QuadTree::intersects(QuadTreeNodePtr a) const {
 	return  a->getPosition().x+a->getSize() >= mPosition.x && a->getPosition().x-a->getSize() <= mPosition.x+mSize.x &&
@@ -300,14 +304,14 @@ bool QuadTree::intersects(QuadTreeNodePtr a) const {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+ Looks to see where the top direction is and returns that value
 */
 QuadTreePtr QuadTree::findNorth() const {
-	if (mParent) //it is not the head of the tree
-	{
+	if (mParent) //it is not the head of the tree - 
+	{            // we initially compare the directions and return the values that would give an adjustment to that
 		if (this == mParent->mChilds[SE]) return mParent->mChilds[NE];
 		if (this == mParent->mChilds[SW]) return mParent->mChilds[NW];
-		QuadTreePtr n = mParent->findNorth();
+		QuadTreePtr n = mParent->findNorth();     //constantly do this until we find north
 		if(n) {
 			if (n->mIsLeaf) return n;
 			else if (this == mParent->mChilds[NE]) return n->mChilds[SE];
@@ -319,14 +323,14 @@ QuadTreePtr QuadTree::findNorth() const {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+Looks to see where the bottom direction is and returns that value
 */
 QuadTreePtr QuadTree::findSouth() const {
 	if (mParent) //it is not the head of the tree
-	{
+	{      // we initially compare the directions and return the values that would give an adjustment to that
 		if (this == mParent->mChilds[NE]) return mParent->mChilds[SE];
 		if (this == mParent->mChilds[NW]) return mParent->mChilds[SW];
-		QuadTreePtr n = mParent->findSouth();
+		QuadTreePtr n = mParent->findSouth();     //constantly do this until we find south
 		if(n) {
 			if (n->mIsLeaf) return n;
 			else if (this == mParent->mChilds[SE]) return n->mChilds[NE];
@@ -338,14 +342,14 @@ QuadTreePtr QuadTree::findSouth() const {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+ Looks to see where the right direction is and returns that value
 */
 QuadTreePtr QuadTree::findEast() const {
 	if (mParent) //it is not the head of the tree
-	{
+	{   // we initially compare the directions and return the values that would give an adjustment to that
 		if (this == mParent->mChilds[NW]) return mParent->mChilds[NE];
 		if (this == mParent->mChilds[SW]) return mParent->mChilds[SE];
-		QuadTreePtr n = mParent->findEast();
+		QuadTreePtr n = mParent->findEast();       //constantly do this until we find East
 		if(n) {
 			if (n->mIsLeaf) return n;
 			else if (this == mParent->mChilds[NE]) return n->mChilds[NW];
@@ -357,14 +361,14 @@ QuadTreePtr QuadTree::findEast() const {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+  Looks to see where the left direction is and returns that value
 */
 QuadTreePtr QuadTree::findWest() const {
 	if (mParent) //it is not the head of the tree
-	{
+	{    // we initially compare the directions and return the values that would give an adjustment to that
 		if (this == mParent->mChilds[NE]) return mParent->mChilds[NW];
 		if (this == mParent->mChilds[SE]) return mParent->mChilds[SW];
-		QuadTreePtr n = mParent->findWest();
+		QuadTreePtr n = mParent->findWest();    //constantly do this until we find West
 		if(n) {
 			if (n->mIsLeaf) return n;
 			else if (this == mParent->mChilds[NW]) return n->mChilds[NE];
@@ -425,8 +429,8 @@ list<QuadTreePtr> QuadTree::getNeighbours() const {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
-*/
+  Checks to see if the element exists in any regions, if it is not in a region it will inform us
+*/   // This code does not work well for now
 void QuadTreeNode::updateRegion() {
 	if(!mRegion) {
 		printf("Element is not in a Region\n");
