@@ -1,16 +1,31 @@
-//
-// Created by niels on 07.06.15.
-// Edits Performed by Mostafa Okasha to improve the documentation of this file
-// Edits were performed on March 07 and March 08 - 2017
-#include "QuadTree.h"
+//************************************************************************************************//
+// Created by niels on 07.06.15.                                                                  //
+//************************************************************************************************//
+// Edits Performed by Mostafa Okasha on March 07 and March 08 - 2017 to improve the 
+// documentation of this file
+//************************************************************************************************//
+// The comments were created to the best of my ability to understand the code as there was very
+// little code documentation provided by the creater of the original document.
+//************************************************************************************************//
 
+#include "QuadTree.h" //  Includes the C++ function declarations and macro definitions to be shared
+
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Class Summary:
+
+*/
 QuadTree::QuadTree(const Vector& mPosition, const Vector& mSize, std::function<void(QuadTreeNodePtr, QuadTreeNodePtr)> mCollisionCallback, size_t mMaxAmount, QuadTreePtr mParent)  :
 		mParent(mParent), mPosition(mPosition), mSize(mSize), mMaxAmount(mMaxAmount), mCollisionCallback(mCollisionCallback)
 {
 	//printf("Created Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
 	mElements.reserve(mMaxAmount);
 }
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 void QuadTree::doCollisionCheck() {
 	list<QuadTreePtr> neighbours = getNeighbours();
 
@@ -54,7 +69,11 @@ void QuadTree::doCollisionCheck() {
 
 
 }
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 bool QuadTree::add(QuadTreeNodePtr elem) {
 	if(isInside(elem)) { //Contains point and fits inside
 		if(mIsLeaf && mElements.size() < mMaxAmount) { //Still some space left
@@ -94,7 +113,11 @@ bool QuadTree::add(QuadTreeNodePtr elem) {
 	}
 	return false;
 }
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 bool QuadTree::remove(QuadTreeNodePtr elem) {
 	//if(isInside(elem)) {
 		bool found = false;
@@ -132,7 +155,11 @@ bool QuadTree::remove(QuadTreeNodePtr elem) {
 	return false;
 }
 
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 size_t QuadTree::getElementCount() const {
 	if(mIsLeaf)
 		return mElements.size();
@@ -143,7 +170,11 @@ size_t QuadTree::getElementCount() const {
 		   mChilds[3]->getElementCount();
 }
 
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 size_t QuadTree::getChildCount() const {
 	return mIsLeaf ? 1 : 1 +
 						 mChilds[0]->getChildCount() +
@@ -151,7 +182,11 @@ size_t QuadTree::getChildCount() const {
 						 mChilds[2]->getChildCount() +
 						 mChilds[3]->getChildCount();
 }
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 void QuadTree::checkCollision(QuadTreeNodePtr e1) {
 	if(intersects(e1)) { //Only check if the element actually intersects this area
 		vector<QuadTreeNodePtr> oldList;
@@ -176,7 +211,11 @@ void QuadTree::checkCollision(QuadTreeNodePtr e1) {
 		}
 	}
 }
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 void QuadTree::split() {
 	if(mIsLeaf) {
 		//mChilds[NW] = make_shared<QuadTree>(mPosition, mSize/2, mCollisionCallback, mMaxAmount, shared_from_this());
@@ -204,7 +243,11 @@ void QuadTree::split() {
 	}
 }
 
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 void QuadTree::combine() {
 	if(!mIsLeaf) {
 		if(getElementCount() < mMaxAmount / 2) {
@@ -227,19 +270,31 @@ void QuadTree::combine() {
 		}
 	}
 }
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 bool QuadTree::isInside(QuadTreeNodePtr a) const {
 	return a->getPosition().x >= mPosition.x && a->getPosition().x <= mPosition.x+mSize.x &&
 		   a->getPosition().y >= mPosition.y && a->getPosition().y <= mPosition.y+mSize.y &&
 		   min(mSize.x, mSize.y) >= a->getSize();
 }
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 bool QuadTree::intersects(QuadTreeNodePtr a) const {
 	return  a->getPosition().x+a->getSize() >= mPosition.x && a->getPosition().x-a->getSize() <= mPosition.x+mSize.x &&
 			a->getPosition().y+a->getSize() >= mPosition.y && a->getPosition().y-a->getSize() <= mPosition.y+mSize.y;
 }
 
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 QuadTreePtr QuadTree::findNorth() const {
 	if (mParent) //it is not the head of the tree
 	{
@@ -254,7 +309,11 @@ QuadTreePtr QuadTree::findNorth() const {
 	}
 	return QuadTreePtr();
 }
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 QuadTreePtr QuadTree::findSouth() const {
 	if (mParent) //it is not the head of the tree
 	{
@@ -269,7 +328,11 @@ QuadTreePtr QuadTree::findSouth() const {
 	}
 	return QuadTreePtr();
 }
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 QuadTreePtr QuadTree::findEast() const {
 	if (mParent) //it is not the head of the tree
 	{
@@ -284,7 +347,11 @@ QuadTreePtr QuadTree::findEast() const {
 	}
 	return QuadTreePtr();
 }
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 QuadTreePtr QuadTree::findWest() const {
 	if (mParent) //it is not the head of the tree
 	{
@@ -299,7 +366,11 @@ QuadTreePtr QuadTree::findWest() const {
 	}
 	return QuadTreePtr();
 }
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 list<QuadTreePtr> QuadTree::getNeighbours() const {
 	if (!mParent) //head as no neigbours
 		return list<QuadTreePtr>();
@@ -344,7 +415,11 @@ list<QuadTreePtr> QuadTree::getNeighbours() const {
 
 	return res;
 }
+//***************************************************************************************************************************************//
+//***************************************************************************************************************************************//
+/* Function Summary:
 
+*/
 void QuadTreeNode::updateRegion() {
 	if(!mRegion) {
 		printf("Element is not in a Region\n");
