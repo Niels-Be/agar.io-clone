@@ -77,40 +77,40 @@ void QuadTree::doCollisionCheck() {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+ The add cuntion adds an element to the children of the parent is capable of supplying space to the element
 */
-bool QuadTree::add(QuadTreeNodePtr elem) {
+bool QuadTree::add(QuadTreeNodePtr elem) { // will always return true if there is space to add elements otherwise it returns false
 	if(isInside(elem)) { //Contains point and fits inside
 // mIsLeaf checks to see if it's the last node of the tree (a leaf). Returns true if so.
-		if(mIsLeaf && mElements.size() < mMaxAmount) { //Still some space left 
+		if(mIsLeaf && mElements.size() < mMaxAmount) { // if there is still space left to add elements then do the following
 			{
-				lock_guard<mutex> _lock(mMutex);
+				lock_guard<mutex> _lock(mMutex);         // lock it up for safety
 				/*for(QuadTreeNodePtr& e : mElements)
 					if(e == elem)
 						printf("Double Element in TreeNode!!! %p\n", e);*/
 
-				mElements.push_back(elem);
+				mElements.push_back(elem);                 // shift the elements of the node back 
 			}
-			if(elem->mRegion)
+			if(elem->mRegion)             //this checks to see if elem exists in the region if so it will delete it
 				elem->mRegion->remove(elem);
 			elem->mRegion = this;
 			//printf("Added to Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
 		} else { // No space left
 	// mIsLeaf checks to see if it's the last node of the tree (a leaf). Returns true if so.
-			if(mIsLeaf)
+			if(mIsLeaf)      //check to see if node is last node in the tree
 				split();
 			//Try to add it to a child
 			if(!(mChilds[0]->add(elem) || mChilds[1]->add(elem) || mChilds[2]->add(elem) || mChilds[3]->add(elem))) {
 				//Otherwise add it to this node anyway (it is probably to big for the children)
 				{
-					lock_guard<mutex> _lock(mMutex);
+					lock_guard<mutex> _lock(mMutex); //same as above
 					/*for(QuadTreeNodePtr& e : mElements)
 						if(e == elem)
 							printf("Double2 Element in TreeNode!!! %p\n", e);*/
 
 					mElements.push_back(elem);
 				}
-				if(elem->mRegion)
+				if(elem->mRegion)             //same as above
 					elem->mRegion->remove(elem);
 				elem->mRegion = this;
 				//printf("Added to own Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
