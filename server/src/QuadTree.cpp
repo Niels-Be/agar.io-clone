@@ -380,13 +380,13 @@ QuadTreePtr QuadTree::findWest() const {
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+    This function checks if there are any existing neighbours and returns them one by one 
 */
 list<QuadTreePtr> QuadTree::getNeighbours() const {
-	if (!mParent) //head as no neigbours
+	if (!mParent) // The top of the tree will have no neighbours 
 		return list<QuadTreePtr>();
 
-	QuadTreePtr northeast;
+	QuadTreePtr northeast;      // creates an object of all the direction types and finds all 4 main directions for that ptr
 	QuadTreePtr northwest;
 	QuadTreePtr southeast;
 	QuadTreePtr southwest;
@@ -397,7 +397,7 @@ list<QuadTreePtr> QuadTree::getNeighbours() const {
 
 	list<QuadTreePtr> res;
 
-	if(west)
+	if(west)                     //push all the main direction values
 		res.push_back(west);
 	if(east)
 		res.push_back(east);
@@ -406,22 +406,22 @@ list<QuadTreePtr> QuadTree::getNeighbours() const {
 	if(south)
 		res.push_back(south);
 
-	if(north) {
+	if(north) {                           //looks for interacting neighbours by comparing the direction of the vectors
 		northeast = north->findEast();
 		if(northeast)
 			res.push_back(northeast);
 		northwest = north->findWest();
 		if(northwest)
-			res.push_back(northwest);
+			res.push_back(northwest);          // if so it pushes that value
 	}
 
-	if(south) {
+	if(south) {                               //looks for interacting neighbours by comparing the direction of the vectors
 		southeast = south->findEast();
 		if(southeast)
 			res.push_back(southeast);
 		southwest = south->findWest();
 		if(southwest)
-			res.push_back(southwest);
+			res.push_back(southwest);               // if so it pushes that valu
 	}
 
 	return res;
