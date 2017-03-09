@@ -123,36 +123,36 @@ bool QuadTree::add(QuadTreeNodePtr elem) { // will always return true if there i
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+   This function simply removes the element in the node and when it does it will continue doing so to all children of that node
 */
-bool QuadTree::remove(QuadTreeNodePtr elem) {
+bool QuadTree::remove(QuadTreeNodePtr elem) {      // attempt and remove elem
 	//if(isInside(elem)) {
 		bool found = false;
 		{
-			lock_guard<mutex> _lock(mMutex);
+			lock_guard<mutex> _lock(mMutex);    // safety first
 
-			auto it = mElements.begin();
+			auto it = mElements.begin();       // checks for repetition of the element
 			while (it != mElements.end()) {
 				if (*it == elem)
 					break;
 				it++;
 			}
-			if (it != mElements.end()) {
+			if (it != mElements.end()) {       // if the required element exists then it is removed
 				*it = mElements.back();
 				mElements.pop_back();
-				found = true;
+				found = true;            // sets found to true upon successful popping
 			}
 		}
-		if(found) {
+		if(found) {                          //after removal checks to see if the node is empty.
 			if(mElements.empty()) {
 				if(mIsLeaf && mParent)
 					mParent->combine();
 				else
-					combine();
+					combine();                   // if no children exist then the parent has no children 
 			}
 			return true;
 		} else
-		if (!mIsLeaf) {
+		if (!mIsLeaf) {                                 // constantly remove all elements of all children
 			return  mChilds[0]->remove(elem) ||
 					mChilds[1]->remove(elem) ||
 					mChilds[2]->remove(elem) ||
