@@ -11,15 +11,22 @@
 #include "QuadTree.h" //  Includes the C++ function declarations and macro definitions to be shared
 
 //***************************************************************************************************************************************//
+// Note: If you do not know what a QuadTree is it is a tree like data structure where by each node has 4 children.
+// This expands from the smallest data size up to the full scale of the data.
 //***************************************************************************************************************************************//
-/* Class Summary:
 
+/* This is the default class constructor of the QuadTree class:
+Class QuadTree was instantiated in QuadTree.h. We are setting the resources of the class to construct the class with the given parameter
+types. This calls the main function QuadTree and feeds it the required parameters for the data structure to be formed. It subsequintially
+calls each function and returns the values as the parameters.
 */
 QuadTree::QuadTree(const Vector& mPosition, const Vector& mSize, std::function<void(QuadTreeNodePtr, QuadTreeNodePtr)> mCollisionCallback, size_t mMaxAmount, QuadTreePtr mParent)  :
 		mParent(mParent), mPosition(mPosition), mSize(mSize), mMaxAmount(mMaxAmount), mCollisionCallback(mCollisionCallback)
 {
 	//printf("Created Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
-	mElements.reserve(mMaxAmount);
+	
+	// Requests that mElements vector capacity is at least mMaxAmount. If not then it increases storage capacity for that vector
+	mElements.reserve(mMaxAmount);     
 }
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
