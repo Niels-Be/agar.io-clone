@@ -31,50 +31,48 @@ QuadTree::QuadTree(const Vector& mPosition, const Vector& mSize, std::function<v
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+ Function checks to see if the current object has touched another object of the same class i.e: to see if they have collided
 */
 void QuadTree::doCollisionCheck() {
-	list<QuadTreePtr> neighbours = getNeighbours();
+	list<QuadTreePtr> neighbours = getNeighbours();   // We need all the surrounding neighbours to check for collisions
 
 	//start checking of children
-	if(!mIsLeaf) {
-		mChilds[0]->doCollisionCheck();
+	if(!mIsLeaf) {   // mIsLeaf checks to see if it's the last node of the tree (a leaf). Returns true if so.
+		mChilds[0]->doCollisionCheck();             // If not then checks if all 4 children have collided with any object i.e calls itself back
 		mChilds[1]->doCollisionCheck();
 		mChilds[2]->doCollisionCheck();
 		mChilds[3]->doCollisionCheck();
 	}
-
+	
 	vector<QuadTreeNodePtr> oldList;
 	{
-		lock_guard<mutex> _lock(mMutex);
-		oldList = mElements;
+		lock_guard<mutex> _lock(mMutex);      // Safety lock for multithreading reading
+		oldList = mElements;                  // We set our current elemnts to the old elements before creating a node shift
 	}
 
-	for(size_t i = 0; i < oldList.size(); i++) {
-		QuadTreeNodePtr& e1 = oldList[i];
-		if(e1->isDeleted()) continue;
+	for(size_t i = 0; i < oldList.size(); i++) {      // Keep repeating i times where i is the size of the mElements
+		QuadTreeNodePtr& e1 = oldList[i];                 // map element1 to the oldList
+		if(e1->isDeleted()) continue;                    // Keep going if first element is non-existant
 		//Start at i + 1 because we already checked these before
-		for(size_t j = i + 1; j < oldList.size(); j++) {
-			QuadTreeNodePtr& e2 = oldList[j];
-			assert(e1 != e2);
-			if(e1->isDeleted() || e2->isDeleted()) continue;
-			if(e1->intersect(e2)) {
+		for(size_t j = i + 1; j < oldList.size(); j++) {        // same recursion as above.  
+			QuadTreeNodePtr& e2 = oldList[j];                   // Map element2 to the oldList
+			assert(e1 != e2);                                   
+			if(e1->isDeleted() || e2->isDeleted()) continue;        // only continue when both elements have been deleted
+			if(e1->intersect(e2)) {                                 // if so then we check for a collision between e1 and e2
 				mCollisionCallback(e1, e2);
 			}
 		}
 		//Pass to children
-		if(!mIsLeaf) {
-			mChilds[0]->checkCollision(e1);
+		if(!mIsLeaf) {                          // mIsLeaf checks to see if it's the last node of the tree (a leaf). Returns true if so. 
+			mChilds[0]->checkCollision(e1);   // for each node checks to see if any elements intersect with the area e1
 			mChilds[1]->checkCollision(e1);
 			mChilds[2]->checkCollision(e1);
 			mChilds[3]->checkCollision(e1);
 		}
 		//Pass to neighbours
-		for(QuadTreePtr& qt : neighbours)
+		for(QuadTreePtr& qt : neighbours)  //map out elements to the neighbouring objects so they can check for collisions with the area
 			qt->checkCollision(e1);
 	}
-
-
 }
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
@@ -83,7 +81,8 @@ void QuadTree::doCollisionCheck() {
 */
 bool QuadTree::add(QuadTreeNodePtr elem) {
 	if(isInside(elem)) { //Contains point and fits inside
-		if(mIsLeaf && mElements.size() < mMaxAmount) { //Still some space left
+// mIsLeaf checks to see if it's the last node of the tree (a leaf). Returns true if so.
+		if(mIsLeaf && mElements.size() < mMaxAmount) { //Still some space left 
 			{
 				lock_guard<mutex> _lock(mMutex);
 				/*for(QuadTreeNodePtr& e : mElements)
@@ -97,6 +96,7 @@ bool QuadTree::add(QuadTreeNodePtr elem) {
 			elem->mRegion = this;
 			//printf("Added to Region %lf, %lf x %lf, %lf\n", mPosition.x, mPosition.y, mPosition.x+mSize.x, mPosition.y+mSize.y);
 		} else { // No space left
+	// mIsLeaf checks to see if it's the last node of the tree (a leaf). Returns true if so.
 			if(mIsLeaf)
 				split();
 			//Try to add it to a child
