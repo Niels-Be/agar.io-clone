@@ -165,12 +165,12 @@ bool QuadTree::remove(QuadTreeNodePtr elem) {      // attempt and remove elem
 //***************************************************************************************************************************************//
 //***************************************************************************************************************************************//
 /* Function Summary:
-
+     returns the number of elements under each child 
 */
 size_t QuadTree::getElementCount() const {
-	if(mIsLeaf)
+	if(mIsLeaf)                       // if the elemeent is the last node then the total size is it's size
 		return mElements.size();
-	return mElements.size() +
+	return mElements.size() +                       //sums all the children and returns that value
 		   mChilds[0]->getElementCount() +
 		   mChilds[1]->getElementCount() +
 		   mChilds[2]->getElementCount() +
